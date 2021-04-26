@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:marine/connection/http_req.dart';
+import 'package:marine/model/vessel.dart';
+
+import 'home.dart';
 
 class Loading extends StatefulWidget {
   @override
@@ -8,21 +12,35 @@ class Loading extends StatefulWidget {
 
 class _LoadingState extends State<Loading> {
 
-  HttpRequest request = new HttpRequest('http://demo.signalk.org/signalk/v1/api/vessels');
 
+  void loadFirstPosition() async{
+    HttpRequest request = new HttpRequest();
+
+    List<Vessel> vessels = await request.createVessels();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+        builder: (context) => Home(vessels: vessels)
+        )
+    );
+  }
 
   @override void initState() {
     super.initState();
-    request.createVessels();
+    loadFirstPosition();
   }
-
-
-
-
 
   //grafica
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Scaffold(
+        backgroundColor: Colors.blue[100],
+        body: Center(
+            child : SpinKitRotatingCircle(
+              color: Colors.white,
+              size: 50.0,
+            )
+        )
+    );
   }
 }
