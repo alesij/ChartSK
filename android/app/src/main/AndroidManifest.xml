@@ -2,6 +2,7 @@
     package="com.alessiodimatteo.marine.marine">
    <application
         android:label="marine"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
