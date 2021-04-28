@@ -16,7 +16,7 @@ class HttpRequest{
 
     Map dataSelf = jsonDecode(responseSelf.body);
 
-    //estraggo prima i dati di self per far si che self sia il primo della lista (indice 0)
+    //estraggo prima i dati di self per far si che self sia il primo della lista (indice 0).
     try{
       double latitude = dataSelf['navigation']['position']['value']['latitude'];
       double longitude = dataSelf['navigation']['position']['value']['longitude'];
