@@ -1,35 +1,85 @@
 import 'dart:convert';
 import 'package:http/http.dart';
+import 'package:latlong/latlong.dart';
 import 'package:marine/model/vessel.dart';
 
 class HttpRequest{
 
-  final String url = 'http://demo.signalk.org/signalk/v1/api/vessels';
-
+  final String urlSelf = 'http://demo.signalk.org/signalk/v1/api/vessels/self';
+  final String urlAll = 'http://demo.signalk.org/signalk/v1/api/vessels';
 
   Future<List<Vessel>> createVessels() async{
     List<Vessel> vessels = [];
 
-    //http request
-    Response response = await get(Uri.parse(url));
+    //http request per trovare self
+    Response responseSelf = await get(Uri.parse(urlSelf));
 
+    Map dataSelf = jsonDecode(responseSelf.body);
+
+    //estraggo prima i dati di self per far si che self sia il primo della lista (indice 0)
+    try{
+      double latitude = dataSelf['navigation']['position']['value']['latitude'];
+      double longitude = dataSelf['navigation']['position']['value']['longitude'];
+      double directionInRadians= dataSelf['navigation']['courseOverGroundTrue']['value'];
+      double speed = dataSelf['navigation']['speedOverGround']['value'];
+
+      Vessel temporaryVessel = new Vessel(
+        id: dataSelf['uuid'],latLng:
+        new LatLng(latitude,longitude),
+        directionInRadians: directionInRadians,
+        speed: speed
+      );
+
+      vessels.add(temporaryVessel);
+      print(temporaryVessel.id);
+      print(temporaryVessel.latLng.latitude);
+      print(temporaryVessel.latLng.longitude);
+      print(temporaryVessel.directionInRadians);
+      print(temporaryVessel.speed);
+    }
+    on Error catch(_){
+      print('error');
+    }
+
+    //ora aggiungo tutti gli altri vessels
+    //http request
+    Response response = await get(Uri.parse(urlAll));
     Map data = jsonDecode(response.body);
 
     data.keys.forEach((key) {
-      print('id: $key');
-      try{
-        double latitude = data[key]['navigation']['position']['value']['latitude'];
-        double longitude = data[key]['navigation']['position']['value']['longitude'];
+      if(key!=vessels[0].id){
+        double directionInRadians;
+        double speed;
+        double latitude;
+        double longitude;
+      try {
+        latitude = data[key]['navigation']['position']['value']['latitude'];
+        longitude = data[key]['navigation']['position']['value']['longitude'];
 
-        print('latitude : ${data[key]['navigation']['position']['value']['latitude']}');
-        print('longitude : ${data[key]['navigation']['position']['value']['longitude']}');
-        Vessel temporaryVessel = new Vessel(id: key,latitude: latitude,longitude: longitude);
+        try{
+          speed = data[key]['navigation']['speedOverGround']['value'];
+        }on Error catch(_) {print('speed not available');}
+        try{
+          directionInRadians =
+          data[key]['navigation']['courseOverGroundTrue']['value'];
+        }on Error catch(_) {print('gradi not available');}
+
+
+        Vessel temporaryVessel = new Vessel(
+            id: key,latLng:
+        new LatLng(latitude,longitude),
+            directionInRadians: directionInRadians,
+            speed: speed
+        );
+
         vessels.add(temporaryVessel);
-      }
-      on Error catch(_){
-        print("Position not available");
-      };
-    });
+        print(temporaryVessel.id);
+        print(temporaryVessel.latLng.latitude);
+        print(temporaryVessel.latLng.longitude);
+        print(temporaryVessel.directionInRadians);
+        print(temporaryVessel.speed);
+      }on Error catch(_) {print('position not available');}
+    }});
     return vessels;
   }
 }
