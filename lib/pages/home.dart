@@ -7,7 +7,6 @@ import 'package:flutter_map/flutter_map.dart';
 class Home extends StatefulWidget {
   List<Vessel> vessels = [];
   Vessel myVessel;
-  List<Marker> _markers = [];
 
   Home({Key key, @required this.vessels}) : super(key: key);
 
@@ -16,6 +15,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  List<Marker> _markers = [];
 
   void addMarkers() {
 
@@ -23,7 +23,7 @@ class _HomeState extends State<Home> {
       //print('$i: ${widget.vessels[i].id} - ${widget.vessels[i].latLng.latitude} - ${widget.vessels[i].latLng.longitude}');
 
       if(i==0){
-        widget._markers.add(
+        _markers.add(
             Marker(
                 width: 80.0,
                 height: 80.0,
@@ -42,7 +42,7 @@ class _HomeState extends State<Home> {
             )
         );
       }else{
-        this.widget._markers.add(Marker(
+        _markers.add(Marker(
             width: 80.0,
             height: 80.0,
             point: this.widget.vessels[i].latLng,
@@ -72,7 +72,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
         body: FlutterMap(
       options: MapOptions(
-        center: widget._markers[0].point,
+        center: _markers[0].point,
         zoom: 13.0,
       ),
       layers: [
@@ -81,13 +81,23 @@ class _HomeState extends State<Home> {
           subdomains: ['a','b','c'],
         ),
         MarkerLayerOptions(
-          markers: widget._markers,
-        )
+          markers: _markers,
+        ),
+        PolylineLayerOptions(
+          polylines: [Polyline(
+            points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(5)]
+          ),
+          ]
+
+        ),
       ],
     ),
+
       floatingActionButton: FloatingActionButton(
-      onPressed: (){},
-      child: Icon(Icons.gps_fixed_rounded),
+      onPressed: (){
+        // Automatically center the location marker on the map when location updated until user interact with the map.
+        setState(() => {});},
+        child: Icon(Icons.gps_fixed_rounded),
     )
     );
   }
