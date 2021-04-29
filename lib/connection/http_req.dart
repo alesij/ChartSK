@@ -48,8 +48,8 @@ class HttpRequest{
 
     data.keys.forEach((key) {
       if(key!=vessels[0].id){
-        double directionInRadians;
-        double speed;
+        double directionInRadians=0;
+        double speed=0;
         double latitude;
         double longitude;
       try {

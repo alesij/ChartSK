@@ -7,7 +7,6 @@ import 'package:flutter_map/flutter_map.dart';
 class Home extends StatefulWidget {
   List<Vessel> vessels = [];
   Vessel myVessel;
-
   List<Marker> _markers = [];
 
   Home({Key key, @required this.vessels}) : super(key: key);
@@ -21,7 +20,7 @@ class _HomeState extends State<Home> {
   void addMarkers() {
 
     for (int i = 0; i < widget.vessels.length; i++) {
-      print('$i: ${widget.vessels[i].id} - ${widget.vessels[i].latLng.latitude} - ${widget.vessels[i].latLng.longitude}');
+      //print('$i: ${widget.vessels[i].id} - ${widget.vessels[i].latLng.latitude} - ${widget.vessels[i].latLng.longitude}');
 
       if(i==0){
         widget._markers.add(
@@ -31,10 +30,13 @@ class _HomeState extends State<Home> {
                 point: widget.vessels[i].latLng,
                 builder: (ctx) =>
                 new Container(
-                    child: Icon(
-                      Icons.location_on,
-                      color: Colors.red[700],
-                      size: 30,
+                    child: Transform.rotate(
+                      angle: widget.vessels[i].directionInRadians,
+                      child: Icon(
+                        Icons.location_on,
+                        color: Colors.red[700],
+                        size: 30.0,
+                      ),
                     )
                 )
             )
@@ -46,10 +48,13 @@ class _HomeState extends State<Home> {
             point: this.widget.vessels[i].latLng,
             builder: (ctx) =>
             new Container(
-                child: Icon(
-                  Icons.location_on,
-                  color: Colors.green[700],
-                  size: 30,
+                child: Transform.rotate(
+                  angle: widget.vessels[i].directionInRadians,
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.green[700],
+                    size: 30.0,
+                  ),
                 )
             )
         ));
@@ -73,7 +78,7 @@ class _HomeState extends State<Home> {
       layers: [
         TileLayerOptions(
           urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          subdomains: ['a','b','c']
+          subdomains: ['a','b','c'],
         ),
         MarkerLayerOptions(
           markers: widget._markers,
