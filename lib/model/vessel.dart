@@ -9,6 +9,7 @@ class Vessel{
   double directionInRadians;
   double speed;
 
+
   Vessel({this.id,this.latLng,this.directionInRadians,this.speed});
 
   double directionToDegrees() => this.directionInRadians * radians2Degrees; // da radianti a gradi

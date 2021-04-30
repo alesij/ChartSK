@@ -32,11 +32,11 @@ class _HomeState extends State<Home> {
                 new Container(
                     child: Transform.rotate(
                       angle: widget.vessels[i].directionInRadians,
-                      child: Icon(
-                        Icons.location_on,
-                        color: Colors.red[700],
-                        size: 30.0,
-                      ),
+                      child: Image.asset(
+                          'assets/icona.png',
+                          scale: 0.1,
+                          width: 50,
+                          height: 50),
                     )
                 )
             )
