@@ -26,16 +26,18 @@ class HttpRequest{
       Vessel temporaryVessel = new Vessel(
         id: dataSelf['uuid'],latLng:
         new LatLng(latitude,longitude),
-        directionInRadians: directionInRadians,
-        speed: speed
+        courseOverGroundTrue: directionInRadians,
+        speedOverGround: speed
       );
 
       vessels.add(temporaryVessel);
+      /*
       print(temporaryVessel.id);
       print(temporaryVessel.latLng.latitude);
       print(temporaryVessel.latLng.longitude);
-      print(temporaryVessel.directionInRadians);
-      print(temporaryVessel.speed);
+      print(temporaryVessel.courseOverGroundTrue);
+      print(temporaryVessel.speedOverGround);
+       */
     }
     on Error catch(_){
       print('error');
@@ -64,20 +66,22 @@ class HttpRequest{
           data[key]['navigation']['courseOverGroundTrue']['value'];
         }on Error catch(_) {print('gradi not available');}
 
-
         Vessel temporaryVessel = new Vessel(
             id: key,latLng:
         new LatLng(latitude,longitude),
-            directionInRadians: directionInRadians,
-            speed: speed
+            courseOverGroundTrue: directionInRadians,
+            speedOverGround: speed
         );
 
         vessels.add(temporaryVessel);
+        /*
         print(temporaryVessel.id);
         print(temporaryVessel.latLng.latitude);
         print(temporaryVessel.latLng.longitude);
-        print(temporaryVessel.directionInRadians);
-        print(temporaryVessel.speed);
+        print(temporaryVessel.courseOverGroundTrue);
+        print(temporaryVessel.speedOverGround);
+
+         */
       }on Error catch(_) {print('position not available');}
     }});
     return vessels;

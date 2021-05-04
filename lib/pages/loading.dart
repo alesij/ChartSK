@@ -17,7 +17,7 @@ class _LoadingState extends State<Loading> {
     HttpRequest request = new HttpRequest();
 
     List<Vessel> vessels = await request.createVessels();
-    Navigator.push(
+    Navigator.pushReplacement(
         context,
         MaterialPageRoute(
         builder: (context) => Home(vessels: vessels)
