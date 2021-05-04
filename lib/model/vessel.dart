@@ -4,13 +4,14 @@ import 'dart:math';
 
 class Vessel{
 
+  String name;
   String id;
-  LatLng latLng = LatLng(0, 0);
+  LatLng latLng;
   double courseOverGroundTrue;
   double speedOverGround;
 
 
-  Vessel({this.id,this.latLng,this.courseOverGroundTrue,this.speedOverGround});
+  Vessel({this.name,this.id,this.latLng,this.courseOverGroundTrue,this.speedOverGround});
 
   double directionToDegrees() => this.courseOverGroundTrue * radians2Degrees; // da radianti a gradi
 

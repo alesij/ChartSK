@@ -30,6 +30,8 @@ class HttpRequest{
         speedOverGround: speed
       );
 
+      temporaryVessel.nextPosition(5);
+
       vessels.add(temporaryVessel);
       /*
       print(temporaryVessel.id);
@@ -50,13 +52,20 @@ class HttpRequest{
 
     data.keys.forEach((key) {
       if(key!=vessels[0].id){
+        String name = '';
         double directionInRadians=0;
         double speed=0;
         double latitude;
         double longitude;
+
       try {
         latitude = data[key]['navigation']['position']['value']['latitude'];
         longitude = data[key]['navigation']['position']['value']['longitude'];
+
+        try{
+          name = data[key]['name'];
+          print(name);
+        }on Error catch (_) {print('name not available');}
 
         try{
           speed = data[key]['navigation']['speedOverGround']['value'];
@@ -67,6 +76,7 @@ class HttpRequest{
         }on Error catch(_) {print('gradi not available');}
 
         Vessel temporaryVessel = new Vessel(
+            name: name,
             id: key,latLng:
         new LatLng(latitude,longitude),
             courseOverGroundTrue: directionInRadians,
