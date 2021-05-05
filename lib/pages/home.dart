@@ -1,16 +1,15 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:latlong/latlong.dart';
 import 'package:marine/model/vessel.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:marine/widget/vessel_widget.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 // ignore: must_be_immutable
 class Home extends StatefulWidget {
   List<Vessel> vessels = [];
-  Vessel myVessel;
   final channel = WebSocketChannel.connect(Uri.parse('ws://demo.signalk.org/signalk/v1/stream?subscribe=none'));
 
 
@@ -31,13 +30,7 @@ class _HomeState extends State<Home> {
                 width: 70.0,
                 height: 70.0,
                 point: widget.vessels[i].latLng,
-                builder: (ctx) =>
-                new Container(
-                    child: Transform.rotate(
-                      angle: widget.vessels[i].courseOverGroundTrue,
-                      child: Image.asset('assets/ship_red.png')
-                    )
-                )
+                builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: 'assets/ship_red.png')
             )
         );
       }else{
@@ -45,21 +38,7 @@ class _HomeState extends State<Home> {
             width: 70.0,
             height: 70.0,
             point: this.widget.vessels[i].latLng,
-            builder: (ctx) =>
-                Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        child: Text(widget.vessels[i].name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible),
-                        ),
-                      Container(
-                      child: Transform.rotate(
-                          angle: widget.vessels[i].courseOverGroundTrue,
-                          child: Image.asset('assets/ship_blur.png'),
-                        ),
-                  ),
-          ]
-                ),
+            builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: 'assets/ship_blur.png')
             )
         );
       }
@@ -106,13 +85,7 @@ class _HomeState extends State<Home> {
           width: 70.0,
           height: 70.0,
           point: widget.vessels[index].latLng,
-          builder: (ctx) =>
-          new Container(
-              child: Transform.rotate(
-                  angle: widget.vessels[index].courseOverGroundTrue,
-                  child: Image.asset('assets/ship_red.png')
-              )
-          )
+          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_red.png')
       );
     }
     else{
@@ -120,22 +93,8 @@ class _HomeState extends State<Home> {
           width: 70.0,
           height: 70.0,
           point: widget.vessels[index].latLng,
-          builder: (ctx) =>
-              Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                        child: Text(widget.vessels[index].name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible,),
-                      ),
-                    Container(
-                      child: Transform.rotate(
-                        angle: widget.vessels[index].courseOverGroundTrue,
-                        child: Image.asset('assets/ship_blur.png'),
-                      ),
-                    ),
-                ]
-                ),
-              );
+          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_blur.png')
+      );
     }
   }
 
