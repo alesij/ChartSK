@@ -14,7 +14,6 @@ class Home extends StatefulWidget {
   final channel = WebSocketChannel.connect(Uri.parse('ws://demo.signalk.org/signalk/v1/stream?subscribe=none'));
 
 
-
   Home({Key key, @required this.vessels}) : super(key: key);
 
   @override
@@ -29,8 +28,8 @@ class _HomeState extends State<Home> {
       if(i==0){
          _markers.add(
             Marker(
-                width: 40.0,
-                height: 40.0,
+                width: 70.0,
+                height: 70.0,
                 point: widget.vessels[i].latLng,
                 builder: (ctx) =>
                 new Container(
@@ -43,16 +42,24 @@ class _HomeState extends State<Home> {
         );
       }else{
         _markers.add(Marker(
-            width: 40.0,
-            height: 40.0,
+            width: 70.0,
+            height: 70.0,
             point: this.widget.vessels[i].latLng,
             builder: (ctx) =>
-            new Container(
-              child: Transform.rotate(
-                angle: widget.vessels[i].courseOverGroundTrue,
-                child: Image.asset('assets/ship_blur.png'),
+                Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        child: Text(widget.vessels[i].name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible),
+                        ),
+                      Container(
+                      child: Transform.rotate(
+                          angle: widget.vessels[i].courseOverGroundTrue,
+                          child: Image.asset('assets/ship_blur.png'),
+                        ),
+                  ),
+          ]
                 ),
-              ),
             )
         );
       }
@@ -95,28 +102,38 @@ class _HomeState extends State<Home> {
 
   void updateMarker(index){
     if(index==0) {
-      _markers[index] = Marker(width: 40.0,
-          height: 40.0,
+      _markers[index] = Marker(
+          width: 70.0,
+          height: 70.0,
           point: widget.vessels[index].latLng,
           builder: (ctx) =>
-              Container(
-                child: Transform.rotate(
+          new Container(
+              child: Transform.rotate(
                   angle: widget.vessels[index].courseOverGroundTrue,
-                  child: Image.asset('assets/ship_red.png'),
-
-                ),
-              ));
+                  child: Image.asset('assets/ship_red.png')
+              )
+          )
+      );
     }
     else{
-      _markers[index] = Marker(width: 40.0,
-          height: 40.0,
+      _markers[index] = Marker(
+          width: 70.0,
+          height: 70.0,
           point: widget.vessels[index].latLng,
           builder: (ctx) =>
-              Container(
-                child: Transform.rotate(
-                  angle: widget.vessels[index].courseOverGroundTrue,
-                  child: Image.asset('assets/ship_blur.png'),
-                  ),
+              Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                        child: Text(widget.vessels[index].name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible,),
+                      ),
+                    Container(
+                      child: Transform.rotate(
+                        angle: widget.vessels[index].courseOverGroundTrue,
+                        child: Image.asset('assets/ship_blur.png'),
+                      ),
+                    ),
+                ]
                 ),
               );
     }
@@ -215,6 +232,7 @@ class _HomeState extends State<Home> {
 
         floatingActionButton: FloatingActionButton(
           onPressed: (){
+
             // Automatically center the location marker on the map when location updated until user interact with the map.
             setState(() => {});},
           child: Icon(Icons.gps_fixed_rounded),
