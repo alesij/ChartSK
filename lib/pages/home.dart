@@ -207,7 +207,7 @@ class _HomeState extends State<Home> {
              child: SizedBox(
                width: 200,
                  height: 100,
-                 child: Slider.adaptive(
+                 child: Slider(
                 value: positionPrevision,
                 onChanged: (newValue){
                   setState(() => positionPrevision = newValue);
