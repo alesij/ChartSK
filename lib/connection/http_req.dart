@@ -52,9 +52,9 @@ class HttpRequest{
 
     data.keys.forEach((key) {
       if(key!=vessels[0].id){
-        String name;
-        double directionInRadians;
-        double speed;
+        String name='';
+        double directionInRadians=0;
+        double speed=0;
         double latitude;
         double longitude;
 
