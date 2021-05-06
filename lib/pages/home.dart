@@ -174,7 +174,14 @@ class _HomeState extends State<Home> {
                 TileLayerOptions(
                   urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                   subdomains: ['a','b','c'],
+                  maxZoom: 200,
                 ),
+                TileLayerOptions(
+                    urlTemplate: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+                    subdomains: ['a','b','c'],
+                    backgroundColor: Colors.transparent
+                ),
+
                 MarkerLayerOptions(
                   markers: _markers,
                 ),
