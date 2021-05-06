@@ -52,9 +52,9 @@ class HttpRequest{
 
     data.keys.forEach((key) {
       if(key!=vessels[0].id){
-        String name = '';
-        double directionInRadians=0;
-        double speed=0;
+        String name;
+        double directionInRadians;
+        double speed;
         double latitude;
         double longitude;
 
@@ -64,7 +64,6 @@ class HttpRequest{
 
         try{
           name = data[key]['name'];
-          print(name);
         }on Error catch (_) {print('name not available');}
 
         try{
@@ -77,21 +76,24 @@ class HttpRequest{
 
         Vessel temporaryVessel = new Vessel(
             name: name,
-            id: key,latLng:
-        new LatLng(latitude,longitude),
+            id: key,
+            latLng: new LatLng(latitude,longitude),
             courseOverGroundTrue: directionInRadians,
             speedOverGround: speed
         );
 
         vessels.add(temporaryVessel);
+
         /*
         print(temporaryVessel.id);
+        print(temporaryVessel.name);
         print(temporaryVessel.latLng.latitude);
         print(temporaryVessel.latLng.longitude);
         print(temporaryVessel.courseOverGroundTrue);
         print(temporaryVessel.speedOverGround);
-
          */
+
+
       }on Error catch(_) {print('position not available');}
     }});
     return vessels;

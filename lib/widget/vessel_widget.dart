@@ -4,8 +4,9 @@ import 'package:marine/model/vessel.dart';
 class VesselWidget extends StatefulWidget {
   Vessel vessel;
   String icon;
-
-  VesselWidget({Key key,@required this.vessel,@required this.icon}) : super(key: key);
+  double width;
+  double height;
+  VesselWidget({Key key,@required this.vessel,@required this.icon,@required this.width,@required this.height}) : super(key: key);
 
   @override
   _VesselWidgetState createState() => _VesselWidgetState();
@@ -23,7 +24,7 @@ class _VesselWidgetState extends State<VesselWidget> {
           Container(
             child: Transform.rotate(
               angle: widget.vessel.courseOverGroundTrue,
-              child: Image.asset(widget.icon),
+              child: Image.asset(widget.icon,width: widget.width, height: widget.height),
             ),
           ),
         ]

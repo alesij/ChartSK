@@ -21,8 +21,10 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<Marker> _markers = [];
+  double positionPrevision=0;
 
-  Future<void> addMarkers() async {
+
+  Future<void> createMarkers() async {
     for (int i = 0; i < widget.vessels.length; i++) {
       if(i==0){
          _markers.add(
@@ -30,7 +32,7 @@ class _HomeState extends State<Home> {
                 width: 70.0,
                 height: 70.0,
                 point: widget.vessels[i].latLng,
-                builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: 'assets/ship_red.png')
+                builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: 'assets/ship_red.png',width: 50,height: 50)
             )
         );
       }else{
@@ -38,7 +40,7 @@ class _HomeState extends State<Home> {
             width: 70.0,
             height: 70.0,
             point: this.widget.vessels[i].latLng,
-            builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: 'assets/ship_blur.png')
+            builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: 'assets/ais_active.png',width: 25,height: 25)
             )
         );
       }
@@ -47,7 +49,7 @@ class _HomeState extends State<Home> {
 
   @override void initState() {
     super.initState();
-    addMarkers();
+    createMarkers();
     var msg = {
         "context": "vessels.*",
         "subscribe": [
@@ -85,7 +87,7 @@ class _HomeState extends State<Home> {
           width: 70.0,
           height: 70.0,
           point: widget.vessels[index].latLng,
-          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_red.png')
+          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_red.png',width: 50,height: 50)
       );
     }
     else{
@@ -93,7 +95,7 @@ class _HomeState extends State<Home> {
           width: 70.0,
           height: 70.0,
           point: widget.vessels[index].latLng,
-          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_blur.png')
+          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ais_active.png',width: 25,height: 25)
       );
     }
   }
@@ -101,23 +103,25 @@ class _HomeState extends State<Home> {
   //modifica valori del vessel
   void readWS(snapshot){
     if(snapshot.hasData && !snapshot.hasError){
-      print('sono qui');
       Map data = jsonDecode(snapshot.data);
       String id = data['context'].toString().substring(8);
       String path=data['updates'][0]['values'][0]['path'];
       for(int i=0;i<widget.vessels.length;i++){
         if(widget.vessels[i].id == id){
+          print('modificato vessel $i ovvero ${widget.vessels[i].name}, id=${widget.vessels[i].id}');
           if(path=='navigation.speedOverGround'){
             try {
               if(data['updates'][0]['values'][0]['value'] == 0){
+                print('modifica speed overground da ${widget.vessels[i].speedOverGround} a ${data['updates'][0]['values'][0]['value']}');
                 widget.vessels[i].speedOverGround = 0.0;
               }else{
+                print('modifica speed overground da ${widget.vessels[i].speedOverGround} a ${data['updates'][0]['values'][0]['value']}');
                 widget.vessels[i].speedOverGround =
                 data['updates'][0]['values'][0]['value'];
               }
 
               //calcolo la previsione sulla prossima posizione
-              widget.vessels[i].nextPosition(5);
+              widget.vessels[i].nextPosition(positionPrevision);
               updateMarker(i);
             }catch(e,s){
               print("impossibile aggiornare velocità->$e $s");
@@ -127,12 +131,14 @@ class _HomeState extends State<Home> {
             try {
               //necessario perché 0 lo legge come int
               if(data['updates'][0]['values'][0]['value'] == 0){
+                print('modifica courseoverground da ${widget.vessels[i].courseOverGroundTrue} a ${data['updates'][0]['values'][0]['value']}');
                 widget.vessels[i].courseOverGroundTrue = 0.0;
               }
               else {
+                print('modifica courseoverground da ${widget.vessels[i].courseOverGroundTrue} a ${data['updates'][0]['values'][0]['value']}');
                 widget.vessels[i].courseOverGroundTrue = data['updates'][0]['values'][0]['value'];
               }
-              widget.vessels[i].nextPosition(5);
+              widget.vessels[i].nextPosition(positionPrevision);
               updateMarker(i);
             }catch (e,s){
               print("impossibile aggiornare direzione->$e $s");
@@ -144,9 +150,11 @@ class _HomeState extends State<Home> {
                   data['updates'][0]['values'][0]['value']['latitude'],
                   data['updates'][0]['values'][0]['value']['longitude']
               );
+              print('modifica position da ${widget.vessels[i].latLng} a $latLng');
               widget.vessels[i].latLng = latLng;
               _markers[i].point.latitude = latLng.latitude;
               _markers[i].point.longitude = latLng.longitude;
+
             }catch (e,s){
               print("impossibile aggiornare position->$e $s");
             }
@@ -159,50 +167,53 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: StreamBuilder(
-          stream: widget.channel.stream,
-          builder: (context,snapshot) {
-            try {
-              readWS(snapshot);
-            }catch (e){print('la prima lettura non fornisce info a me utili');}
-            return FlutterMap(
-              options: MapOptions(
-                center: _markers[0].point,
-                zoom: 13.0,
-              ),
-              layers: [
-                TileLayerOptions(
-                  urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                  subdomains: ['a','b','c'],
-                  maxZoom: 200,
+        body: Stack(
+          children: [StreamBuilder(
+            stream: widget.channel.stream,
+            builder: (context,snapshot) {
+              try {
+                readWS(snapshot);
+              }catch (e){print('la prima lettura non fornisce info a me utili');}
+              return FlutterMap(
+                options: MapOptions(
+                  center: _markers[0].point,
+                  zoom: 13.0,
                 ),
-                TileLayerOptions(
-                    urlTemplate: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+                layers: [
+                  TileLayerOptions(
+                    urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                     subdomains: ['a','b','c'],
-                    backgroundColor: Colors.transparent
-                ),
-
-                MarkerLayerOptions(
-                  markers: _markers,
-                ),
-                PolylineLayerOptions(
-                    polylines: [Polyline(
-                        points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(5)]
-                    ),
-                    ]
-                ),
-              ],
-            );
-          },
+                    maxZoom: 200,
+                  ),
+                  TileLayerOptions(
+                      urlTemplate: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+                      subdomains: ['a','b','c'],
+                      backgroundColor: Colors.transparent
+                  ),
+                  MarkerLayerOptions(
+                    markers: _markers,
+                  ),
+                  PolylineLayerOptions(
+                      polylines: [Polyline(
+                          points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(positionPrevision)]
+                      ),]
+                  ),
+                ],
+              );
+            },
+          ),
+              Slider.adaptive(
+                value: positionPrevision,
+                onChanged: (newValue){
+                  setState(() => positionPrevision = newValue);
+                },
+                min: 0,
+                max: 60,
+                divisions: 60,
+                label: '$positionPrevision',
+              )
+            ],
         ),
-
-        floatingActionButton: FloatingActionButton(
-          onPressed: (){
-
-            // Automatically center the location marker on the map when location updated until user interact with the map.
-            setState(() => {});},
-          child: Icon(Icons.gps_fixed_rounded),
-        )
     );
   }
 }

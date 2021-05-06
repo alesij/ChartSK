@@ -35,4 +35,7 @@ class Vessel{
     return LatLng(180/pi * lat2 , 180 / pi * lon2);
   }
 
+  void checkCollision(List<Vessel> vessels,min){
+  //todo
+  }
 }
