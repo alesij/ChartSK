@@ -202,7 +202,12 @@ class _HomeState extends State<Home> {
               );
             },
           ),
-              Slider.adaptive(
+      Align(
+        alignment: Alignment.bottomRight,
+             child: SizedBox(
+               width: 200,
+                 height: 100,
+                 child: Slider.adaptive(
                 value: positionPrevision,
                 onChanged: (newValue){
                   setState(() => positionPrevision = newValue);
@@ -210,8 +215,10 @@ class _HomeState extends State<Home> {
                 min: 0,
                 max: 60,
                 divisions: 60,
-                label: '$positionPrevision',
+                label: positionPrevision.round().toString(),
               )
+      )
+    )
             ],
         ),
     );
