@@ -21,10 +21,12 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<Marker> _markers = [];
-  double positionPrevision=0;
+  double positionPrevisionMin=0;
+  MapController mapController = MapController();
+  bool followPosition = false;
+  bool followRoute = false;
 
-
-  Future<void> createMarkers() async {
+  void createMarkers() {
     for (int i = 0; i < widget.vessels.length; i++) {
       if(i==0){
          _markers.add(
@@ -87,7 +89,7 @@ class _HomeState extends State<Home> {
           width: 70.0,
           height: 70.0,
           point: widget.vessels[index].latLng,
-          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_red.png',width: 50,height: 50)
+          builder: (ctx) => VesselWidget(vessel: widget.vessels[index], icon: 'assets/ship_red.png',width: 30,height: 30)
       );
     }
     else{
@@ -121,7 +123,7 @@ class _HomeState extends State<Home> {
               }
 
               //calcolo la previsione sulla prossima posizione
-              widget.vessels[i].nextPosition(positionPrevision);
+              widget.vessels[i].nextPosition(positionPrevisionMin);
               updateMarker(i);
             }catch(e,s){
               print("impossibile aggiornare velocità->$e $s");
@@ -138,7 +140,7 @@ class _HomeState extends State<Home> {
                 print('modifica courseoverground da ${widget.vessels[i].courseOverGroundTrue} a ${data['updates'][0]['values'][0]['value']}');
                 widget.vessels[i].courseOverGroundTrue = data['updates'][0]['values'][0]['value'];
               }
-              widget.vessels[i].nextPosition(positionPrevision);
+              widget.vessels[i].nextPosition(positionPrevisionMin);
               updateMarker(i);
             }catch (e,s){
               print("impossibile aggiornare direzione->$e $s");
@@ -152,8 +154,7 @@ class _HomeState extends State<Home> {
               );
               print('modifica position da ${widget.vessels[i].latLng} a $latLng');
               widget.vessels[i].latLng = latLng;
-              _markers[i].point.latitude = latLng.latitude;
-              _markers[i].point.longitude = latLng.longitude;
+              updateMarker(i);
 
             }catch (e,s){
               print("impossibile aggiornare position->$e $s");
@@ -164,17 +165,33 @@ class _HomeState extends State<Home> {
     }
   }
 
+  void followVessel(position,route){
+    if(position)
+      mapController.move(_markers[0].point, 13.0);
+    else if(route)
+      mapController.rotate(widget.vessels[0].courseOverGroundTrue-180);
+    else
+      mapController.rotate(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: Stack(
           children: [StreamBuilder(
+
             stream: widget.channel.stream,
             builder: (context,snapshot) {
               try {
                 readWS(snapshot);
               }catch (e){print('la prima lettura non fornisce info a me utili');}
+
+              try {
+                followVessel(followPosition, followRoute);
+              }catch (e){print('wewe');}
+
               return FlutterMap(
+                mapController: mapController,
                 options: MapOptions(
                   center: _markers[0].point,
                   zoom: 13.0,
@@ -195,7 +212,7 @@ class _HomeState extends State<Home> {
                   ),
                   PolylineLayerOptions(
                       polylines: [Polyline(
-                          points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(positionPrevision)]
+                          points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(positionPrevisionMin)]
                       ),]
                   ),
                 ],
@@ -208,17 +225,43 @@ class _HomeState extends State<Home> {
                width: 200,
                  height: 100,
                  child: Slider(
-                value: positionPrevision,
+                value: positionPrevisionMin,
                 onChanged: (newValue){
-                  setState(() => positionPrevision = newValue);
+                  setState(() => positionPrevisionMin = newValue);
                 },
                 min: 0,
                 max: 60,
                 divisions: 60,
-                label: positionPrevision.round().toString(),
+                label: positionPrevisionMin.round().toString(),
               )
       )
-    )
+    ),
+            Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                    width: 200,
+                    height: 100,
+                    child: ElevatedButton(
+                      child: Icon(Icons.gps_fixed),
+                      onPressed: () {
+                        setState(() => followPosition=!followPosition );
+                      },
+                    )
+                )
+            ),
+            Align(
+                alignment: Alignment.bottomLeft,
+                child: SizedBox(
+                    width: 200,
+                    height: 100,
+                    child: ElevatedButton(
+                      child: Icon(Icons.gps_fixed),
+                      onPressed: () {
+                        setState(() => followRoute = !followRoute);
+                      },
+                    )
+                )
+            ),
             ],
         ),
     );
