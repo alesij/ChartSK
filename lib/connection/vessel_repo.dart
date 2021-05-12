@@ -3,12 +3,12 @@ import 'package:http/http.dart';
 import 'package:latlong/latlong.dart';
 import 'package:marine/model/vessel.dart';
 
-class HttpRequest{
+class VesselRepo{
 
   final String urlSelf = 'http://demo.signalk.org/signalk/v1/api/vessels/self';
   final String urlAll = 'http://demo.signalk.org/signalk/v1/api/vessels';
 
-  Future<List<Vessel>> createVessels() async{
+  Future<List<Vessel>> createVesselsOld() async{
     List<Vessel> vessels = [];
 
     //http request per trovare self
@@ -17,7 +17,7 @@ class HttpRequest{
     Map dataSelf = jsonDecode(responseSelf.body);
 
     //estraggo prima i dati di self per far si che self sia il primo della lista (indice 0).
-    try{
+    {
       double latitude = dataSelf['navigation']['position']['value']['latitude'];
       double longitude = dataSelf['navigation']['position']['value']['longitude'];
       double directionInRadians= dataSelf['navigation']['courseOverGroundTrue']['value'];
@@ -41,9 +41,7 @@ class HttpRequest{
       print(temporaryVessel.speedOverGround);
        */
     }
-    on Error catch(_){
-      print('error');
-    }
+
 
     //ora aggiungo tutti gli altri vessels
     //http request
@@ -57,10 +55,11 @@ class HttpRequest{
         double speed=0;
         double latitude;
         double longitude;
-
-      try {
-        latitude = data[key]['navigation']['position']['value']['latitude'];
-        longitude = data[key]['navigation']['position']['value']['longitude'];
+      Map navigation = data[key]['navigation'];
+      if(navigation.containsKey('position')) {
+        Map position = navigation['position']['value'];
+        latitude = position['latitude'];
+        longitude = position['longitude'];
 
         try{
           name = data[key]['name'];
@@ -94,8 +93,30 @@ class HttpRequest{
          */
 
 
-      }on Error catch(_) {print('position not available');}
+      }
     }});
+    return vessels;
+  }
+
+  Future<List<Vessel>> createVessels() async{
+    final String url = 'http://demo.signalk.org/signalk/v1/api/';
+    List<Vessel> vessels = [];
+
+    //http request per trovare self
+    Response response = await get(Uri.parse(url));
+
+    Map<String,dynamic> data = jsonDecode(response.body);
+    String idSelf = data['self'];
+    Map vesselsMap = data['vessels'];
+    vesselsMap.keys.forEach((key) {
+      Vessel tmp = Vessel.fromJson(vesselsMap[key]);
+      if(tmp.latLng!=null){
+        if(tmp.id == idSelf)
+          vessels.insert(0, tmp);
+        else
+          vessels.add(tmp);
+      }
+    });
     return vessels;
   }
 }

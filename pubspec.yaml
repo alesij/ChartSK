@@ -33,6 +33,9 @@ dependencies:
   flutter_map: ^0.12.0
   latlong: ^0.6.1
   web_socket_channel: ^2.0.0
+  bloc: ^7.0.0
+  flutter_bloc: ^7.0.0
+  font_awesome_flutter: ^9.0.0
 
 dev_dependencies:
   flutter_test:

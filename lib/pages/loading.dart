@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:marine/connection/http_req.dart';
+import 'package:marine/connection/vessel_repo.dart';
 import 'package:marine/model/vessel.dart';
 
 import 'home.dart';
@@ -14,7 +14,7 @@ class _LoadingState extends State<Loading> {
 
 
   void loadFirstPosition() async{
-    HttpRequest request = new HttpRequest();
+    VesselRepo request = VesselRepo();
 
     List<Vessel> vessels = await request.createVessels();
     Navigator.pushReplacement(
