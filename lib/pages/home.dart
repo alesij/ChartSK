@@ -36,6 +36,12 @@ class _HomeState extends State<Home> {
   bool measure = false;
   lat.LatLng startMeasure, stopMeasure;
   Polyline measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
+
+  @override
+  void dispose() {
+    widget.channel.sink.close();
+    super.dispose();
+  }
   Marker generateMarker(int i){
     return Marker(
         width: 70.0,
@@ -88,7 +94,6 @@ class _HomeState extends State<Home> {
 
   @override void initState() {
     super.initState();
-    createMarkers();
     var msg = {
       "context": "vessels.*",
       "subscribe": [
@@ -198,30 +203,49 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Scaffold(
+      child: BlocConsumer<GetVesselsBloc, GetVesselsState>(
+        bloc: BlocProvider.of<GetVesselsBloc>(context),
+  listener: (context, state) {
+    if(state is GetVesselsFailure){
+      final snackBar = SnackBar(content: Text(state.message));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
+  },
+  builder: (context, state) {
+    if(state is GetVesselsLoading) {
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      }
+    else if(state is GetVesselsSucceed) {
+      widget.vessels = state.vessels;
+      if(_markers==null || _markers.length==0){
+        createMarkers();
+      }
+      return Scaffold(
         body: Stack(
           children: [
             Positioned.fill(
               child: StreamBuilder(
-              stream: widget.channel.stream,
-              builder: (context,snapshot) {
-                readWS(snapshot);
-                return FlutterMap(
+                stream: widget.channel.stream,
+                builder: (context, snapshot) {
+                  readWS(snapshot);
+                  return FlutterMap(
                     mapController: mapController,
                     options: MapOptions(
-                        maxZoom: 16,
-                        minZoom: 6,
+                      maxZoom: 16,
+                      minZoom: 6,
                       onTap: (point) {
                         print(point);
-                        if(measure){
-                          if(startMeasure!=null){
-                            stopMeasure=point;
+                        if (measure) {
+                          if (startMeasure != null) {
+                            stopMeasure = point;
 
                             setState(() {
                               measurePolyline = Polyline(
                                   strokeWidth: 4.0,
                                   color: Colors.red,
-                                  points: [startMeasure,stopMeasure]);
+                                  points: [startMeasure, stopMeasure]);
 
                               showDialog(context: context, builder: (context) {
                                 return AlertDialog(
@@ -229,9 +253,21 @@ class _HomeState extends State<Home> {
                                   content: SingleChildScrollView(
                                     child: ListBody(
                                       children: <Widget>[
-                                        Text('Start: Lat:${startMeasure.latitude.toStringAsFixed(4)} Lon: ${startMeasure.longitude.toStringAsFixed(4)}'),
-                                        Text('End: Lat:${stopMeasure.latitude.toStringAsFixed(4)} Lon: ${stopMeasure.longitude.toStringAsFixed(4)}'),
-                                        Text('Distance : ${SphericalUtil.computeDistanceBetween(LatLng(startMeasure.latitude, startMeasure.longitude),LatLng(stopMeasure.latitude, stopMeasure.longitude)).toStringAsFixed(2)} metres'),
+                                        Text('Start: Lat:${startMeasure.latitude
+                                            .toStringAsFixed(
+                                            4)} Lon: ${startMeasure.longitude
+                                            .toStringAsFixed(4)}'),
+                                        Text('End: Lat:${stopMeasure.latitude
+                                            .toStringAsFixed(
+                                            4)} Lon: ${stopMeasure.longitude
+                                            .toStringAsFixed(4)}'),
+                                        Text('Distance : ${SphericalUtil
+                                            .computeDistanceBetween(LatLng(
+                                            startMeasure.latitude,
+                                            startMeasure.longitude), LatLng(
+                                            stopMeasure.latitude,
+                                            stopMeasure.longitude))
+                                            .toStringAsFixed(2)} metres'),
                                       ],
                                     ),
                                   ),
@@ -246,31 +282,30 @@ class _HomeState extends State<Home> {
                                 );
                               },);
                             });
-                          }else{
-                            startMeasure=point;
+                          } else {
+                            startMeasure = point;
                           }
-
                         }
                       },
                       onPositionChanged: (position, hasGesture) {
-                        if(_selectedIndex!=0){
+                        if (_selectedIndex != 0) {
                           setState(() {
-                             _selectedIndex = 0;
-                            followPosition=false;
+                            _selectedIndex = 0;
+                            followPosition = false;
                           });
                         }
                       },
-                      center: _markers[0].point,
+                      center: widget.vessels[0].latLng,
                       zoom: currentZoom,
                     ),
                     layers: [
                       TileLayerOptions(
                         urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a','b','c'],
+                        subdomains: ['a', 'b', 'c'],
                       ),
                       TileLayerOptions(
                           urlTemplate: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
-                          subdomains: ['a','b','c'],
+                          subdomains: ['a', 'b', 'c'],
                           backgroundColor: Colors.transparent
                       ),
                       MarkerLayerOptions(
@@ -278,27 +313,33 @@ class _HomeState extends State<Home> {
                       ),
                       PolylineLayerOptions(
                           polylines: [Polyline(
-                              points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(positionPrevisionMin)]
-                          ),measurePolyline
+                              points: [
+                                widget.vessels[0].latLng,
+                                widget.vessels[0].nextPosition(
+                                    positionPrevisionMin)
+                              ]
+                          ), measurePolyline
                           ]
                       ),
                     ],
-                );},
+                  );
+                },
               ),
             ),
 
             Align(
                 alignment: Alignment.topRight,
-                child:  Column(
+                child: Column(
                   children: [
                     IconButton(
                         onPressed: () {
-                          setState(() {
-                            if(currentZoom!=mapController.zoom)
-                              currentZoom=mapController.zoom;
+                          //setState(() {
+                            if (currentZoom != mapController.zoom)
+                              currentZoom = mapController.zoom;
                             currentZoom++;
-                            mapController.move(mapController.center, currentZoom);
-                          });
+                            mapController.move(
+                                mapController.center, currentZoom);
+                          //});
                         },
                         icon: Icon(
                           FontAwesomeIcons.searchPlus,
@@ -307,12 +348,13 @@ class _HomeState extends State<Home> {
 
                     IconButton(
                         onPressed: () {
-                          setState(() {
-                            if(currentZoom!=mapController.zoom)
-                              currentZoom=mapController.zoom;
+                          //setState(() {
+                            if (currentZoom != mapController.zoom)
+                              currentZoom = mapController.zoom;
                             currentZoom--;
-                            mapController.move(mapController.center, currentZoom);
-                          });
+                            mapController.move(
+                                mapController.center, currentZoom);
+                          //});
                         },
                         icon: Icon(
                           FontAwesomeIcons.searchMinus,
@@ -321,20 +363,20 @@ class _HomeState extends State<Home> {
 
                     IconButton(
                         onPressed: () {
-                          setState(() {
-                            if(checkCrash) {
+                          //setState(() {
+                            if (checkCrash) {
                               checkCrash = false;
-                              for(Vessel vess in widget.vessels){
+                              for (Vessel vess in widget.vessels) {
                                 vess.crashNotified = false;
                               }
                             } else {
                               checkCrash = true;
                             }
-                          });
+                         // });
                         },
                         icon: Icon(
                           FontAwesomeIcons.exclamationTriangle,
-                          color: checkCrash?Colors.red:Colors.black,
+                          color: checkCrash ? Colors.red : Colors.black,
 
                         )
                     ),
@@ -349,25 +391,30 @@ class _HomeState extends State<Home> {
                                       title: Text('Prevision in min:'),
                                       content: SingleChildScrollView(
                                         child: StatefulBuilder(
-                                          builder: (context, setState) => Slider(
-                                            value: positionPrevisionMin.toDouble(),
-                                            onChanged: (newValue){
-                                              setState(() {
-                                                positionPrevisionMin = newValue.toInt();
-                                              });
-                                            },
-                                            min: 0,
-                                            max: 60,
-                                            divisions: 60,
-                                            label: positionPrevisionMin.round().toString(),
-                                          ),
+                                          builder: (context, setState) =>
+                                              Slider(
+                                                value: positionPrevisionMin
+                                                    .toDouble(),
+                                                onChanged: (newValue) {
+                                                  setState(() {
+                                                    positionPrevisionMin =
+                                                        newValue.toInt();
+                                                  });
+                                                },
+                                                min: 0,
+                                                max: 60,
+                                                divisions: 60,
+                                                label: positionPrevisionMin
+                                                    .round().toString(),
+                                              ),
                                         ),
                                       ),
                                       actions: <Widget>[
                                         TextButton(
                                           child: Text('Close'),
                                           onPressed: () {
-                                            for(Vessel vess in widget.vessels){
+                                            for (Vessel vess in widget
+                                                .vessels) {
                                               vess.crashNotified = false;
                                             }
                                             setState(() {});
@@ -386,9 +433,10 @@ class _HomeState extends State<Home> {
                     IconButton(
                         onPressed: () {
                           setState(() {
-                            if(measure) {
+                            if (measure) {
                               measure = false;
-                              measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
+                              measurePolyline = Polyline(
+                                  points: [lat.LatLng(0, 0), lat.LatLng(0, 0)]);
                               startMeasure = null;
                               stopMeasure = null;
                             } else
@@ -397,7 +445,7 @@ class _HomeState extends State<Home> {
                         },
                         icon: Icon(
                           FontAwesomeIcons.rulerCombined,
-                          color: measure?Colors.blue:Colors.black,
+                          color: measure ? Colors.blue : Colors.black,
 
                         )
                     ),
@@ -405,48 +453,54 @@ class _HomeState extends State<Home> {
                     IconButton(
                         onPressed: () {
                           setState(() {
-                            if(currentZoom!=mapController.zoom)
-                              currentZoom=mapController.zoom;
-                            if(followPosition)
-                              followPosition=false;
-                            else followPosition=true;
+                            if (currentZoom != mapController.zoom)
+                              currentZoom = mapController.zoom;
+                            if (followPosition)
+                              followPosition = false;
+                            else
+                              followPosition = true;
                             followVessel();
                           });
                         },
                         icon: Icon(
                           FontAwesomeIcons.crosshairs,
-                          color: followPosition?Colors.blue:Colors.black,
+                          color: followPosition ? Colors.blue : Colors.black,
                         )
                     ),
 
                     IconButton(
                         onPressed: () {
                           setState(() {
-                            if(currentZoom!=mapController.zoom)
-                              currentZoom=mapController.zoom;
-                            if(followDirection)
-                              followDirection=false;
-                            else followDirection=true;
+                            if (currentZoom != mapController.zoom)
+                              currentZoom = mapController.zoom;
+                            if (followDirection)
+                              followDirection = false;
+                            else
+                              followDirection = true;
                             followVessel();
                           });
                         },
                         icon: Icon(
                           FontAwesomeIcons.locationArrow,
-                          color: followDirection?Colors.blue:Colors.black,
+                          color: followDirection ? Colors.blue : Colors.black,
                         )
                     ),
                     IconButton(
                         onPressed: () async {
-
                           Vessel selected = await Navigator.of(context)
-                              .push(MaterialPageRoute<Vessel>(builder: (BuildContext context) {
-                            return BlocProvider(
-                              create: (context) => GetVesselsBloc()..add(GetVessels()),
-                              child: ListVessel(),
-                            );
-                          })
+                              .push(MaterialPageRoute<Vessel>(
+                              builder: (BuildContext context) {
+                                return BlocProvider(
+                                  create: (context) =>
+                                  GetVesselsBloc()
+                                    ..add(GetVessels()),
+                                  child: ListVessel(),
+                                );
+                              })
                           );
-                          mapController.move(selected.latLng, currentZoom);
+                          if(selected!=null) {
+                            mapController.move(selected.latLng, currentZoom);
+                          }
                         },
                         icon: Icon(
                           FontAwesomeIcons.ship,
@@ -458,7 +512,11 @@ class _HomeState extends State<Home> {
 
           ],
         ),
-      ),
+      );
+    }
+    return Container();
+  },
+),
     );
   }
 }

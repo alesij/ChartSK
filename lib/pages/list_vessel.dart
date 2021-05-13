@@ -15,6 +15,7 @@ class _ListVesselState extends State<ListVessel> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
       body: BlocConsumer(
         bloc: BlocProvider.of<GetVesselsBloc>(context),
         listener: (context, state) {
