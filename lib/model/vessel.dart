@@ -1,5 +1,7 @@
 import 'package:latlong/latlong.dart';
 import 'package:vector_math/vector_math.dart';
+import 'package:maps_toolkit/maps_toolkit.dart' as toolkit;
+
 import 'dart:math';
 
 class Vessel{
@@ -9,7 +11,7 @@ class Vessel{
   LatLng latLng;
   double courseOverGroundTrue;
   double speedOverGround;
-
+  bool crashNotified = false;
 
   @override
   bool operator ==(Object other) =>
@@ -49,12 +51,12 @@ class Vessel{
 
   double directionToDegrees() => this.courseOverGroundTrue * radians2Degrees; // da radianti a gradi
 
-  LatLng nextPosition(min){
+  LatLng nextPosition(int min){
     //fra quanti minuti la previsione
-    min = 60/min;
+    double minutes = 60/min;
 
     //from m/s to km/h
-    double distance = (this.speedOverGround * 3.6)/min;
+    double distance = (this.speedOverGround * 3.6)/minutes;
     const int earthRadius = 6371;
 
     var lat2 = asin(sin(pi / 180 * this.latLng.latitude) * cos(distance / earthRadius) +
@@ -71,8 +73,21 @@ class Vessel{
 
 
 
-  void checkCollision(List<Vessel> vessels,min){
-  //todo
+  Vessel checkCollision(List<Vessel> vessels,min){
+    for(Vessel vess in vessels){
+      if(vess.id!=id && !vess.crashNotified) {
+        double distanceBetweenPoints = toolkit.SphericalUtil
+            .computeDistanceBetween(
+            toolkit.LatLng(latLng.latitude, latLng.longitude),
+            toolkit.LatLng(vess.latLng.latitude, vess.latLng.longitude)
+        );
+      if(distanceBetweenPoints < 200) {
+        vess.crashNotified=true;
+        return vess;
+      }
+      }
+    }
+    return null;
   }
 
   @override

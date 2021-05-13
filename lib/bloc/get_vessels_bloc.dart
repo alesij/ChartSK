@@ -15,9 +15,12 @@ class GetVesselsBloc extends Bloc<GetVesselsEvent, GetVesselsState> {
   ) async* {
     if(event is GetVessels){
       yield GetVesselsLoading();
-      List<Vessel> vessels = await VesselRepo().createVessels();
-      //yield GetVesselsSucceed(vessels);
-      yield GetVesselsFailure('qualcosa è andato storto');
+      try {
+        List<Vessel> vessels = await VesselRepo().createVessels();
+        yield GetVesselsSucceed(vessels);
+      }catch (e,s) {
+        yield GetVesselsFailure('qualcosa è andato storto');
+      }
     }
   }
 }

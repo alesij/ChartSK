@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:latlong/latlong.dart';
+import 'package:latlong/latlong.dart' as lat;
+import 'package:maps_toolkit/maps_toolkit.dart';
+import 'package:marine/bloc/get_vessels_bloc.dart';
 import 'package:marine/model/vessel.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:marine/pages/list_vessel.dart';
 import 'package:marine/widget/vessel_widget.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -23,11 +27,15 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<Marker> _markers = [];
-  double positionPrevisionMin=0;
+  int positionPrevisionMin=0;
   MapController mapController = MapController();
   bool followPosition = false;
   bool followDirection = false;
+  bool checkCrash = false;
   double currentZoom = 13.0;
+  bool measure = false;
+  lat.LatLng startMeasure, stopMeasure;
+  Polyline measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
   Marker generateMarker(int i){
     return Marker(
         width: 70.0,
@@ -44,10 +52,10 @@ class _HomeState extends State<Home> {
                           content: SingleChildScrollView(
                             child: StatefulBuilder(
                               builder: (context, setState) => Slider(
-                                value: positionPrevisionMin,
+                                value: positionPrevisionMin.toDouble(),
                                 onChanged: (newValue){
                                   setState(() {
-                                    positionPrevisionMin = newValue;
+                                    positionPrevisionMin = newValue.toInt();
                                   });
                                 },
                                 min: 0,
@@ -118,7 +126,7 @@ class _HomeState extends State<Home> {
 
   //modifica valori del vessel
   void readWS(snapshot) {
-    if (snapshot.hasData && !snapshot.hasError) {
+    if (snapshot.hasData && !snapshot.hasError && snapshot.data!="null") {
       Map data = jsonDecode(snapshot.data);
       if (data.containsKey('context') && data.containsKey('updates')) {
         String id = data['context'].toString().replaceAll("vessels.", "");
@@ -137,7 +145,7 @@ class _HomeState extends State<Home> {
             data['updates'][0]['values'][0]['value'].toDouble();
 
           }else if (path == 'navigation.position') {
-              LatLng latLng = new LatLng(
+              lat.LatLng latLng = new lat.LatLng(
                   data['updates'][0]['values'][0]['value']['latitude'].toDouble(),
                   data['updates'][0]['values'][0]['value']['longitude'].toDouble()
               );
@@ -148,6 +156,28 @@ class _HomeState extends State<Home> {
           updateMarker(vesselToUpdateIndex);
           if(vesselToUpdateIndex==0 && (followDirection || followPosition))
             followVessel();
+
+          if(checkCrash&&positionPrevisionMin>0){
+            int slot = positionPrevisionMin~/5;
+            Vessel vesselInCrash;
+            int i=1;
+            for(i=1;i<6 && vesselInCrash==null;i++) {
+              int slice = i*slot;
+              if(slice!=0) {
+                vesselInCrash = widget.vessels[0].checkCollision(
+                    widget.vessels, slice);
+              }
+            }
+            if(vesselInCrash!=null) {
+              WidgetsBinding.instance.addPostFrameCallback((_){
+
+
+                print('Crash in: ${i*slot} min with ${vesselInCrash.name}');
+                final snackBar = SnackBar(content: Text('Crash in: ${i*slot} min with ${vesselInCrash.name}'));
+                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+              });
+            }
+          }
         }
       }
     }
@@ -164,119 +194,6 @@ class _HomeState extends State<Home> {
 
   bool showNavigation=false;
   int _selectedIndex=0;
-  Widget getNavigation() {
-    if(showNavigation) {
-      return NavigationRail(
-        labelType: NavigationRailLabelType.selected,
-        backgroundColor: Colors.black,
-        unselectedIconTheme: IconThemeData(
-          color: Colors.white,
-        ),
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _selectedIndex = index;
-            switch (index) {
-              case 2:
-                showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return
-                AlertDialog(
-                    title: Text('Prevision in min:'),
-                    content: SingleChildScrollView(
-                        child: StatefulBuilder(
-                          builder: (context, setState) => Slider(
-                          value: positionPrevisionMin,
-                          onChanged: (newValue){
-                            setState(() {
-                              positionPrevisionMin = newValue;
-                            });
-                          },
-                          min: 0,
-                          max: 60,
-                          divisions: 60,
-                          label: positionPrevisionMin.round().toString(),
-                      ),
-                        ),
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        child: Text('Close'),
-                        onPressed: () {
-                          setState(() {});
-                          Navigator.of(context).pop();
-                          },
-                      ),
-                    ]
-                );
-                });
-                break;
-              case 5:
-                followPosition = !followPosition;
-                followVessel();
-                break;
-              case 4:
-                followDirection = !followDirection;
-                followVessel();
-                break;
-            }
-          });
-        },
-
-        extended: false,
-        destinations: const <NavigationRailDestination>[
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.bars),
-            selectedIcon: Icon(FontAwesomeIcons.bars),
-            label: Text('Menu'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.exclamationTriangle),
-            selectedIcon: Icon(FontAwesomeIcons.exclamationTriangle),
-            label: Text('Crash'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.layerGroup),
-            selectedIcon: Icon(FontAwesomeIcons.layerGroup),
-            label: Text('Layers'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.pencilAlt),
-            selectedIcon: Icon(FontAwesomeIcons.pencilAlt),
-            label: Text('Edit'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.locationArrow),
-            selectedIcon: Icon(FontAwesomeIcons.locationArrow),
-            label: Text('Route'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.crosshairs),
-            selectedIcon: Icon(FontAwesomeIcons.crosshairs),
-            label: Text('Center'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(FontAwesomeIcons.ellipsisH),
-            selectedIcon: Icon(FontAwesomeIcons.ellipsisH),
-            label: Text('Other'),
-          ),
-        ],
-      );
-    }else{
-      return Align(
-        alignment: Alignment.topLeft,
-        child: ElevatedButton(
-          child: Text('>'),
-          onPressed: () {
-            setState(() {
-              showNavigation=true;
-            });
-          },
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,90 +207,86 @@ class _HomeState extends State<Home> {
               builder: (context,snapshot) {
                 readWS(snapshot);
                 return FlutterMap(
-                  mapController: mapController,
-                  options: MapOptions(
-                    onTap: (point) {
-                      print(point);
-                    },
-                    onPositionChanged: (position, hasGesture) {
-                      if(_selectedIndex!=0){
-                        setState(() {
-                           _selectedIndex = 0;
-                          followPosition=false;
-                        });
-                      }
-                    },
-                    center: _markers[0].point,
-                    zoom: currentZoom,
-                  ),
-                  layers: [
-                    TileLayerOptions(
-                      urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                      subdomains: ['a','b','c'],
-                      maxZoom: 18,
+                    mapController: mapController,
+                    options: MapOptions(
+                        maxZoom: 16,
+                        minZoom: 6,
+                      onTap: (point) {
+                        print(point);
+                        if(measure){
+                          if(startMeasure!=null){
+                            stopMeasure=point;
+
+                            setState(() {
+                              measurePolyline = Polyline(
+                                  strokeWidth: 4.0,
+                                  color: Colors.red,
+                                  points: [startMeasure,stopMeasure]);
+
+                              showDialog(context: context, builder: (context) {
+                                return AlertDialog(
+                                  title: Text('Measure result'),
+                                  content: SingleChildScrollView(
+                                    child: ListBody(
+                                      children: <Widget>[
+                                        Text('Start: Lat:${startMeasure.latitude.toStringAsFixed(4)} Lon: ${startMeasure.longitude.toStringAsFixed(4)}'),
+                                        Text('End: Lat:${stopMeasure.latitude.toStringAsFixed(4)} Lon: ${stopMeasure.longitude.toStringAsFixed(4)}'),
+                                        Text('Distance : ${SphericalUtil.computeDistanceBetween(LatLng(startMeasure.latitude, startMeasure.longitude),LatLng(stopMeasure.latitude, stopMeasure.longitude)).toStringAsFixed(2)} metres'),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      child: Text('Ok'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },);
+                            });
+                          }else{
+                            startMeasure=point;
+                          }
+
+                        }
+                      },
+                      onPositionChanged: (position, hasGesture) {
+                        if(_selectedIndex!=0){
+                          setState(() {
+                             _selectedIndex = 0;
+                            followPosition=false;
+                          });
+                        }
+                      },
+                      center: _markers[0].point,
+                      zoom: currentZoom,
                     ),
-                    TileLayerOptions(
-                        urlTemplate: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+                    layers: [
+                      TileLayerOptions(
+                        urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                         subdomains: ['a','b','c'],
-                        backgroundColor: Colors.transparent
-                    ),
-                    MarkerLayerOptions(
-                      markers: _markers,
-                    ),
-                    PolylineLayerOptions(
-                        polylines: [Polyline(
-                            points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(positionPrevisionMin)]
-                        ),
-                        ]
-                    ),
-                  ],
-                );
-              },
-          ),
+                      ),
+                      TileLayerOptions(
+                          urlTemplate: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+                          subdomains: ['a','b','c'],
+                          backgroundColor: Colors.transparent
+                      ),
+                      MarkerLayerOptions(
+                        markers: _markers,
+                      ),
+                      PolylineLayerOptions(
+                          polylines: [Polyline(
+                              points: [widget.vessels[0].latLng,widget.vessels[0].nextPosition(positionPrevisionMin)]
+                          ),measurePolyline
+                          ]
+                      ),
+                    ],
+                );},
+              ),
             ),
-            /*Align(
-                alignment: Alignment.bottomRight,
-                child: SizedBox(
-                    width: 200,
-                    height: 100,
-                    child: Slider(
-                      value: positionPrevisionMin,
-                      onChanged: (newValue){
-                        setState(() => positionPrevisionMin = newValue);
-                      },
-                      min: 0,
-                      max: 60,
-                      divisions: 60,
-                      label: positionPrevisionMin.round().toString(),
-                    )
-                )
-            ),
-            Align(
-                alignment: Alignment.bottomCenter,
-                child: SizedBox(
-                    width: 200,
-                    height: 100,
-                    child: ElevatedButton(
-                      child: Icon(Icons.gps_fixed),
-                      onPressed: () {
-                        setState(() => followPosition=!followPosition );
-                      },
-                    )
-                )
-            ),
-            Align(
-                alignment: Alignment.bottomLeft,
-                child: SizedBox(
-                    width: 200,
-                    height: 100,
-                    child: ElevatedButton(
-                      child: Icon(Icons.gps_fixed),
-                      onPressed: () {
-                        setState(() => followRoute = !followRoute);
-                      },
-                    )
-                )
-            ),*/
+
             Align(
                 alignment: Alignment.topRight,
                 child:  Column(
@@ -381,32 +294,48 @@ class _HomeState extends State<Home> {
                     IconButton(
                         onPressed: () {
                           setState(() {
+                            if(currentZoom!=mapController.zoom)
+                              currentZoom=mapController.zoom;
                             currentZoom++;
                             mapController.move(mapController.center, currentZoom);
                           });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.plus,
+                          FontAwesomeIcons.searchPlus,
                         )
                     ),
 
                     IconButton(
                         onPressed: () {
                           setState(() {
+                            if(currentZoom!=mapController.zoom)
+                              currentZoom=mapController.zoom;
                             currentZoom--;
                             mapController.move(mapController.center, currentZoom);
                           });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.minus,
+                          FontAwesomeIcons.searchMinus,
                         )
                     ),
 
                     IconButton(
                         onPressed: () {
+                          setState(() {
+                            if(checkCrash) {
+                              checkCrash = false;
+                              for(Vessel vess in widget.vessels){
+                                vess.crashNotified = false;
+                              }
+                            } else {
+                              checkCrash = true;
+                            }
+                          });
                         },
                         icon: Icon(
                           FontAwesomeIcons.exclamationTriangle,
+                          color: checkCrash?Colors.red:Colors.black,
+
                         )
                     ),
 
@@ -421,10 +350,10 @@ class _HomeState extends State<Home> {
                                       content: SingleChildScrollView(
                                         child: StatefulBuilder(
                                           builder: (context, setState) => Slider(
-                                            value: positionPrevisionMin,
+                                            value: positionPrevisionMin.toDouble(),
                                             onChanged: (newValue){
                                               setState(() {
-                                                positionPrevisionMin = newValue;
+                                                positionPrevisionMin = newValue.toInt();
                                               });
                                             },
                                             min: 0,
@@ -438,6 +367,9 @@ class _HomeState extends State<Home> {
                                         TextButton(
                                           child: Text('Close'),
                                           onPressed: () {
+                                            for(Vessel vess in widget.vessels){
+                                              vess.crashNotified = false;
+                                            }
                                             setState(() {});
                                             Navigator.of(context).pop();
                                           },
@@ -447,22 +379,34 @@ class _HomeState extends State<Home> {
                               });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.layerGroup,
-                        )
-                    ),
-
-                    IconButton(
-                        onPressed: () {
-
-                        },
-                        icon: Icon(
-                          FontAwesomeIcons.pencilAlt,
+                          FontAwesomeIcons.mapMarkedAlt,
                         )
                     ),
 
                     IconButton(
                         onPressed: () {
                           setState(() {
+                            if(measure) {
+                              measure = false;
+                              measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
+                              startMeasure = null;
+                              stopMeasure = null;
+                            } else
+                              measure = true;
+                          });
+                        },
+                        icon: Icon(
+                          FontAwesomeIcons.rulerCombined,
+                          color: measure?Colors.blue:Colors.black,
+
+                        )
+                    ),
+
+                    IconButton(
+                        onPressed: () {
+                          setState(() {
+                            if(currentZoom!=mapController.zoom)
+                              currentZoom=mapController.zoom;
                             if(followPosition)
                               followPosition=false;
                             else followPosition=true;
@@ -478,6 +422,8 @@ class _HomeState extends State<Home> {
                     IconButton(
                         onPressed: () {
                           setState(() {
+                            if(currentZoom!=mapController.zoom)
+                              currentZoom=mapController.zoom;
                             if(followDirection)
                               followDirection=false;
                             else followDirection=true;
@@ -486,18 +432,26 @@ class _HomeState extends State<Home> {
                         },
                         icon: Icon(
                           FontAwesomeIcons.locationArrow,
-                          color: followDirection?Colors.redAccent:Colors.black,
+                          color: followDirection?Colors.blue:Colors.black,
                         )
                     ),
                     IconButton(
-                        onPressed: () {
+                        onPressed: () async {
 
+                          Vessel selected = await Navigator.of(context)
+                              .push(MaterialPageRoute<Vessel>(builder: (BuildContext context) {
+                            return BlocProvider(
+                              create: (context) => GetVesselsBloc()..add(GetVessels()),
+                              child: ListVessel(),
+                            );
+                          })
+                          );
+                          mapController.move(selected.latLng, currentZoom);
                         },
                         icon: Icon(
-                          FontAwesomeIcons.ellipsisH,
+                          FontAwesomeIcons.ship,
                         )
                     ),
-
                   ],
                 )
             ),
