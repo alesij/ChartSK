@@ -1,9 +1,9 @@
 import 'package:latlong/latlong.dart';
 import 'package:vector_math/vector_math.dart';
 import 'package:maps_toolkit/maps_toolkit.dart' as toolkit;
-
 import 'dart:math';
 
+///Vessel Model
 class Vessel{
 
   String name;
@@ -21,7 +21,14 @@ class Vessel{
   @override
   int get hashCode => id.hashCode;
 
+  @override
+  String toString() {
+    return 'Vessel{name: $name, id: $id, latLng: $latLng, courseOverGroundTrue: $courseOverGroundTrue, speedOverGround: $speedOverGround}';
+  }
+
   Vessel({this.name,this.id,this.latLng,this.courseOverGroundTrue,this.speedOverGround});
+
+  ///Costruisce un Vessel da un json
   factory Vessel.fromJson(Map<String, dynamic> json) {
     Vessel retV = Vessel();
       if(json.containsKey('uuid')){
@@ -51,11 +58,11 @@ class Vessel{
 
   double directionToDegrees() => this.courseOverGroundTrue * radians2Degrees; // da radianti a gradi
 
+  ///Prevede la posizione del Vessel entro [min] minuti
   LatLng nextPosition(int min){
-    //fra quanti minuti la previsione
     double minutes = 60/min;
 
-    //from m/s to km/h
+    ///da m/s a km/h
     double distance = (this.speedOverGround * 3.6)/minutes;
     const int earthRadius = 6371;
 
@@ -72,7 +79,7 @@ class Vessel{
   }
 
 
-
+///Ritorna, se esiste, il Vessel con cui c'è un pericolo di collisione
   Vessel checkCollision(List<Vessel> vessels,min){
     for(Vessel vess in vessels){
       if(vess.id!=id && !vess.crashNotified) {
@@ -88,10 +95,5 @@ class Vessel{
       }
     }
     return null;
-  }
-
-  @override
-  String toString() {
-    return 'Vessel{name: $name, id: $id, latLng: $latLng, courseOverGroundTrue: $courseOverGroundTrue, speedOverGround: $speedOverGround}';
   }
 }

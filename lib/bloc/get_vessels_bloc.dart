@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 part 'get_vessels_event.dart';
 part 'get_vessels_state.dart';
 
+
 class GetVesselsBloc extends Bloc<GetVesselsEvent, GetVesselsState> {
   GetVesselsBloc() : super(GetVesselsInitial());
 
@@ -13,12 +14,19 @@ class GetVesselsBloc extends Bloc<GetVesselsEvent, GetVesselsState> {
   Stream<GetVesselsState> mapEventToState(
     GetVesselsEvent event,
   ) async* {
+    //Verifico quale evento è stato scatenato
+    ///Se l'evento è GetVessels
     if(event is GetVessels){
+      ///Viene lanciato lo stato di loading
       yield GetVesselsLoading();
+
+      ///se [VesselRepo().createVessels()] va a buon fine, viene instanziata la lista di Vessel
+      ///e viene lanciato lo stato di successo
       try {
         List<Vessel> vessels = await VesselRepo().createVessels();
         yield GetVesselsSucceed(vessels);
-      }catch (e,s) {
+        ///altrimenti viene lanciato lo stato failure
+      }catch (e) {
         yield GetVesselsFailure('qualcosa è andato storto');
       }
     }

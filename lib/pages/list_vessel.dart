@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:marine/bloc/get_vessels_bloc.dart';
-import 'package:marine/model/vessel.dart';
 
+///Mostra in un [ListView] i [Vessel], mostrandone le momentanee posizioni e i risepttivi nomi.
 class ListVessel extends StatefulWidget {
 
   @override
@@ -19,12 +19,14 @@ class _ListVesselState extends State<ListVessel> {
       body: BlocConsumer(
         bloc: BlocProvider.of<GetVesselsBloc>(context),
         listener: (context, state) {
+          ///Se è di tipo GetVesselsFailure, mostra uno SnackBar contenente il messaggio d'errore.
           if(state is GetVesselsFailure){
             final snackBar = SnackBar(content: Text(state.message));
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
         },
         builder: (context, state) {
+          ///Se state è di tipo GetVesselsSucced, crea la lista dei [Vessel]
           if(state is GetVesselsSucceed)
           return ListView.builder(
               itemCount: state.vessels.length,
@@ -41,6 +43,7 @@ class _ListVesselState extends State<ListVessel> {
                   )
               )
           );
+          ///Se state è di tipo GetVesselsLoading, mostra un CircularProgressIndicator
           if(state is GetVesselsLoading)
             return Center(child: CircularProgressIndicator());
           return Container();
