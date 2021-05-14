@@ -1,0 +1,11 @@
+{
+  "vessel" : "vessel",
+  "previsionInMin" : "Prevision in min",
+  "close" : "Close",
+  "measureResultText" : "Measure result",
+  "crash" : "Crash in: {} min with {}",
+  "measureResultStartPoint" : "Start:\nLat: {} Lon: {}",
+  "measureResultEndPoint" : "\nEnd:\nLat: {} Lon: {}",
+  "measureDistanceBetweenPoints" : "\nDistance: {} meters",
+  "blocError" : "Something wrong happen"
+}

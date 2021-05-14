@@ -1,0 +1,11 @@
+{
+  "vessel" : "Nave",
+  "previsionInMin" : "Previsione tra (minuti)",
+  "close" : "Chiudi",
+  "measureResult" : "Risultato misurazione",
+  "crash" : "Collisione entro: {} min con {}",
+  "measureResultStartPoint" : "Inizio:\nLat: {} Lon: {}",
+  "measureResultEndPoint" : "\nFine:\nLat: {} Lon: {}",
+  "measureDistanceBetweenPoints" : "\nDistanza: {} Metri",
+  "blocError" : "Qualcosa è andato storto"
+}

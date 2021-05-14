@@ -27,7 +27,7 @@ class GetVesselsBloc extends Bloc<GetVesselsEvent, GetVesselsState> {
         yield GetVesselsSucceed(vessels);
         ///altrimenti viene lanciato lo stato failure
       }catch (e) {
-        yield GetVesselsFailure('qualcosa è andato storto');
+        yield GetVesselsFailure('blocError');
       }
     }
   }

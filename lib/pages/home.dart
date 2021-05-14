@@ -12,6 +12,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:marine/pages/list_vessel.dart';
 import 'package:marine/widget/vessel_widget.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 
 // ignore: must_be_immutable
@@ -53,7 +54,7 @@ class _HomeState extends State<Home> {
         width: 70.0,
         height: 70.0,
         point: widget.vessels[i].latLng,
-        builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: i==0?'assets/ship_red.png': 'assets/ais_active.png',width: 25,height: 25));
+        builder: (ctx) => VesselWidget(vessel: widget.vessels[i], icon: i==0?'assets/images/ship_red.png': 'assets/images/ais_active.png',width: 25,height: 25));
   }
 
   ///Crea, per ogni [widget.vessels], il corrispettivo marker
@@ -151,7 +152,7 @@ class _HomeState extends State<Home> {
 
 
                 print('Crash in: ${i*slot} min with ${vesselInCrash.name}');
-                final snackBar = SnackBar(content: Text('Crash in: ${i*slot} min with ${vesselInCrash.name}'));
+                final snackBar = SnackBar(content: Text('crash').tr(args:['${i*slot}','${vesselInCrash.name}']));
                 ScaffoldMessenger.of(context).showSnackBar(snackBar);
               });
             }
@@ -227,25 +228,24 @@ class _HomeState extends State<Home> {
 
                                     showDialog(context: context, builder: (context) {
                                       return AlertDialog(
-                                        title: Text('Measure result'),
+                                        title: Text('measureResult').tr(),
                                         content: SingleChildScrollView(
                                           child: ListBody(
                                             children: <Widget>[
-                                              Text('Start: Lat:${startMeasure.latitude
-                                                  .toStringAsFixed(
-                                                  4)} Lon: ${startMeasure.longitude
-                                                  .toStringAsFixed(4)}'),
-                                              Text('End: Lat:${stopMeasure.latitude
-                                                  .toStringAsFixed(
-                                                  4)} Lon: ${stopMeasure.longitude
-                                                  .toStringAsFixed(4)}'),
-                                              Text('Distance : ${SphericalUtil
-                                                  .computeDistanceBetween(LatLng(
-                                                  startMeasure.latitude,
-                                                  startMeasure.longitude), LatLng(
-                                                  stopMeasure.latitude,
-                                                  stopMeasure.longitude))
-                                                  .toStringAsFixed(2)} metres'),
+                                              Text('measureResultStartPoint').tr(args: [
+                                                "${startMeasure.latitude.toStringAsFixed(4)}",
+                                                "${startMeasure.longitude.toStringAsFixed(4)}"
+                                              ]),
+                                              Text('measureResultEndPoint').tr(args: [
+                                                "${stopMeasure.latitude.toStringAsFixed(4)}",
+                                                "${stopMeasure.longitude.toStringAsFixed(4)}"
+                                              ]),
+                                              Text('measureDistanceBetweenPoints').tr(args: [
+                                                "${SphericalUtil.computeDistanceBetween(
+                                                    LatLng(startMeasure.latitude,startMeasure.longitude),
+                                                    LatLng(stopMeasure.latitude,stopMeasure.longitude))
+                                                    .toStringAsFixed(2)}"
+                                              ])
                                             ],
                                           ),
                                         ),
@@ -362,7 +362,7 @@ class _HomeState extends State<Home> {
                                     builder: (BuildContext context) {
                                       return
                                         AlertDialog(
-                                            title: Text('Prevision in min:'),
+                                            title: Text('previsionInMin').tr(),
                                             content: SingleChildScrollView(
                                               child: StatefulBuilder(
                                                 builder: (context, setState) =>
@@ -385,7 +385,7 @@ class _HomeState extends State<Home> {
                                             ),
                                             actions: <Widget>[
                                               TextButton(
-                                                child: Text('Close'),
+                                                child: Text('close').tr(),
                                                 onPressed: () {
                                                   ///Se il positionPrevisionMin cambia, resetta la flag crashNotified
                                                   ///di  tutti i vessels
