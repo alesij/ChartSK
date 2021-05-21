@@ -6,6 +6,7 @@
   "crash" : "Collisione entro: {} min con {}",
   "measureResultStartPoint" : "Inizio:\nLat: {} Lon: {}",
   "measureResultEndPoint" : "\nFine:\nLat: {} Lon: {}",
-  "measureDistanceBetweenPoints" : "\nDistanza: {} Metri",
-  "blocError" : "Qualcosa è andato storto"
+  "measureDistanceBetweenPoints" : "\nDistanza: {} {}",
+  "blocError" : "Qualcosa è andato storto",
+  "selectSystem" : "Seleziona sistema metrico"
 }

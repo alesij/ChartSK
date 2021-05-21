@@ -38,7 +38,12 @@ class _ListVesselState extends State<ListVessel> {
                     trailing: Icon(FontAwesomeIcons.chevronRight),
                     isThreeLine: true,
                     onTap: (){
+                      ///ritorna l'indice del vessel scelto
+                      Navigator.of(context).pop(index);
+                      /*
+                      ///Ritorna il vessel scelto
                       Navigator.of(context).pop(state.vessels[index]);
+                      */
                     },
                   )
               )

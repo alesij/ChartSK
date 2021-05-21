@@ -16,39 +16,17 @@ class VesselWidget extends StatefulWidget {
 class _VesselWidgetState extends State<VesselWidget> {
   @override
   Widget build(BuildContext context) {
-    return /*GestureDetector(
-          onTap: () {
-            showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return
-                    AlertDialog(
-                        title: Text('${widget.vessel.name}'),
-                        content: Container(),
-                        actions: <Widget>[
-                          TextButton(
-                            child: Text('Close'),
-                            onPressed: () {
-                              setState(() {});
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ]
-                    );
-                });
-          },
-      child: */Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
           children: [
             Container(
-              child: Text(widget.vessel.name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible),
-            ),
-            Container(
-              child: Transform.rotate(
-                angle: widget.vessel.courseOverGroundTrue,
-                child: Image.asset(widget.icon,width: widget.width, height: widget.height),
+                child: Text(widget.vessel.name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible),
               ),
-            ),
+            Container(
+                child: Transform.rotate(
+                  angle: widget.vessel.courseOverGroundTrue,
+                  child: Image.asset(widget.icon,width: widget.width, height: widget.height),
+                ),
+              ),
           ]
      // ),
     );

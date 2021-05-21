@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,14 +8,18 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong/latlong.dart' as lat;
 import 'package:maps_toolkit/maps_toolkit.dart';
 import 'package:marine/bloc/get_vessels_bloc.dart';
+import 'package:marine/model/metric_system.dart';
 import 'package:marine/model/vessel.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:marine/pages/list_vessel.dart';
+import 'package:marine/utility/metric_choice.dart';
+import 'package:marine/widget/measure_result_widget.dart';
+import 'package:marine/widget/metric_radio.dart';
 import 'package:marine/widget/vessel_widget.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-
+//TODO FOCUSSARE TUTTO SUL VESSEL SCELTO(RITORNA INDEX)
 // ignore: must_be_immutable
 class Home extends StatefulWidget {
   List<Vessel> vessels = [];
@@ -24,12 +29,10 @@ class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
 
 
-  ///Prova 1
   @override
   _HomeState createState() => _HomeState();
 }
 
-///Prova 2
 class _HomeState extends State<Home> {
   List<Marker> _markers = [];
   int positionPrevisionMin=0;
@@ -41,6 +44,14 @@ class _HomeState extends State<Home> {
   bool measure = false;
   lat.LatLng startMeasure, stopMeasure;
   Polyline measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
+
+  ///Indice del vessel che si sta seguendo
+  int selectedVesselFocus = 0;
+  ///Utilizzato per calcolare le misurazioni in diversi sistemi metrici
+  MetricSystem metricCalculator = MetricSystem();
+  ///Serve per mantenere le informazioni sulla scelta del sistema metrico
+  Metric metricChoice = Metric.meter;
+
 
   @override
   void dispose() {
@@ -143,7 +154,7 @@ class _HomeState extends State<Home> {
             for(i=1;i<6 && vesselInCrash==null;i++) {
               int slice = i*slot;
               if(slice!=0) {
-                vesselInCrash = widget.vessels[0].checkCollision(
+                vesselInCrash = widget.vessels[selectedVesselFocus].checkCollision(
                     widget.vessels, slice);
               }
             }
@@ -167,9 +178,9 @@ class _HomeState extends State<Home> {
   ///Se [followDirection] = false, ruota la camera verso il Nord
   void followVessel(){
     if (followPosition)
-      mapController.move(_markers[0].point, currentZoom);
+      mapController.move(_markers[selectedVesselFocus].point, currentZoom);
     if (followDirection)
-      mapController.rotate(widget.vessels[0].directionToDegrees());
+      mapController.rotate(widget.vessels[selectedVesselFocus].directionToDegrees());
     else
       mapController.rotate(0);
   }
@@ -226,46 +237,21 @@ class _HomeState extends State<Home> {
                                         color: Colors.red,
                                         points: [startMeasure, stopMeasure]);
 
-                                    showDialog(context: context, builder: (context) {
-                                      return AlertDialog(
-                                        title: Text('measureResult').tr(),
-                                        content: SingleChildScrollView(
-                                          child: ListBody(
-                                            children: <Widget>[
-                                              Text('measureResultStartPoint').tr(args: [
-                                                "${startMeasure.latitude.toStringAsFixed(4)}",
-                                                "${startMeasure.longitude.toStringAsFixed(4)}"
-                                              ]),
-                                              Text('measureResultEndPoint').tr(args: [
-                                                "${stopMeasure.latitude.toStringAsFixed(4)}",
-                                                "${stopMeasure.longitude.toStringAsFixed(4)}"
-                                              ]),
-                                              Text('measureDistanceBetweenPoints').tr(args: [
-                                                "${SphericalUtil.computeDistanceBetween(
-                                                    LatLng(startMeasure.latitude,startMeasure.longitude),
-                                                    LatLng(stopMeasure.latitude,stopMeasure.longitude))
-                                                    .toStringAsFixed(2)}"
-                                              ])
-                                            ],
-                                          ),
-                                        ),
-                                        actions: <Widget>[
-                                          TextButton(
-                                            child: Text('Ok'),
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                          ),
-                                        ],
-                                      );
-                                    },);
+                                    showDialog(context: context,
+                                      builder: (context) => MeasureResult(
+                                        start: startMeasure,
+                                        end: stopMeasure,
+                                        metricChoice: metricChoice,
+                                        calculatedResult: metricCalculator,
+                                      ),
+                                    );
                                   });
                                 } else {
                                   startMeasure = point;
                                 }
                               }
                             },
-                            center: widget.vessels[0].latLng,
+                            center: widget.vessels[selectedVesselFocus].latLng,
                             zoom: currentZoom,
                           ),
                           layers: [
@@ -285,8 +271,8 @@ class _HomeState extends State<Home> {
                                 polylines: [Polyline(
                                     strokeWidth: 2.0,
                                     points: [
-                                      widget.vessels[0].latLng,
-                                      widget.vessels[0].nextPosition(
+                                      widget.vessels[selectedVesselFocus].latLng,
+                                      widget.vessels[selectedVesselFocus].nextPosition(
                                           positionPrevisionMin)
                                     ]
                                 ), measurePolyline
@@ -470,9 +456,10 @@ class _HomeState extends State<Home> {
                           ///Push di [ListVessel]
                           IconButton(
                               onPressed: () async {
-                                ///ListVessel() ritorna un vessel
-                                Vessel selected = await Navigator.of(context)
-                                    .push(MaterialPageRoute<Vessel>(
+
+                                ///ListVessel ritorna l'indice del Vessel selezionato
+                                int index = await Navigator.of(context)
+                                    .push(MaterialPageRoute<int>(
                                     builder: (BuildContext context) {
                                       return BlocProvider(
                                         create: (context) =>
@@ -483,12 +470,28 @@ class _HomeState extends State<Home> {
                                     })
                                 );
                                 ///Se è stato scelto un vessel dalla lista, viene centrata la mappa sul vessel scelto
-                                if(selected!=null) {
-                                  mapController.move(selected.latLng, currentZoom);
+                                if(index!=null) {
+                                  selectedVesselFocus = index;
+                                  mapController.move(widget.vessels[selectedVesselFocus].latLng, currentZoom);
                                 }
                               },
                               icon: Icon(
                                 FontAwesomeIcons.ship,
+                              )
+                          ),
+
+                          IconButton(
+                              onPressed: () {
+                                showDialog(context: context,
+                                    builder: (context) => MetricRadio(),
+                                  ///viene triggerato non appena si sceglie un valore dal dialog
+                                ).then((value){
+                                  metricChoice = value;
+                                });
+                              },
+                              icon: Icon(
+                                FontAwesomeIcons.cog,
+                                color: Colors.black,
                               )
                           ),
                         ],
