@@ -16,18 +16,17 @@ class VesselWidget extends StatefulWidget {
 class _VesselWidgetState extends State<VesselWidget> {
   @override
   Widget build(BuildContext context) {
-    return Column(
-          children: [
-            Container(
-                child: Text(widget.vessel.name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible),
-              ),
-            Container(
-                child: Transform.rotate(
-                  angle: widget.vessel.courseOverGroundTrue,
-                  child: Image.asset(widget.icon,width: widget.width, height: widget.height),
-                ),
-              ),
+    return Container(
+      child: Transform.rotate(
+        angle: widget.vessel.courseOverGroundTrue,
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(widget.vessel.name ?? '', style: TextStyle(fontSize: 10),maxLines: 1, overflow: TextOverflow.visible),
+              Image.asset(widget.icon,width: widget.width, height: widget.height),
           ]
+      ))
      // ),
     );
   }

@@ -180,9 +180,14 @@ class _HomeState extends State<Home> {
     if (followPosition)
       mapController.move(_markers[selectedVesselFocus].point, currentZoom);
     if (followDirection)
-      mapController.rotate(widget.vessels[selectedVesselFocus].directionToDegrees());
+      mapController.rotate(360-widget.vessels[selectedVesselFocus].directionToDegrees());
     else
       mapController.rotate(0);
+
+    print("gradi in radianti : ${widget.vessels[selectedVesselFocus].courseOverGroundTrue}");
+    print("gradi in gradi : ${widget.vessels[selectedVesselFocus].directionToDegrees()}");
+    print("rotazione mappa: ${mapController.rotation}");
+
   }
 
   bool showNavigation=false;
@@ -409,7 +414,7 @@ class _HomeState extends State<Home> {
                                 });
                               },
                               icon: Icon(
-                                FontAwesomeIcons.rulerCombined,
+                                FontAwesomeIcons.draftingCompass,
                                 color: measure ? Colors.blue : Colors.black,
 
                               )
@@ -444,6 +449,7 @@ class _HomeState extends State<Home> {
                                     followDirection = false;
                                   else
                                     followDirection = true;
+
                                   followVessel();
                                 });
                               },
