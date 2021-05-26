@@ -7,10 +7,11 @@ import 'package:easy_localization/easy_localization.dart';
 
 ///Definisce il route dell'app
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   runApp(EasyLocalization(
     supportedLocales: [Locale('en', 'EN'), Locale('it', 'IT')],
-    path: "translations",
+      path: 'assets/translations',
     fallbackLocale: Locale('en', 'EN'),
     child: MyApp()
   ));

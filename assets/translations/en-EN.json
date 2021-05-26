@@ -6,7 +6,7 @@
   "crash" : "Crash in: {} min with {}",
   "measureResultStartPoint" : "Start:\nLat: {} Lon: {}",
   "measureResultEndPoint" : "\nEnd:\nLat: {} Lon: {}",
-  "measureDistanceBetweenPoints" : "\nDistance: {} {}",
+  "measureDistanceBetweenPoints" : "{} {} \n distance",
   "blocError" : "Something wrong happen",
   "selectSystem" : "Select metric system"
 }

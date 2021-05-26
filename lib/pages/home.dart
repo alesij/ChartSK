@@ -11,7 +11,9 @@ import 'package:marine/bloc/get_vessels_bloc.dart';
 import 'package:marine/model/metric_system.dart';
 import 'package:marine/model/vessel.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:marine/model/waypoint.dart';
 import 'package:marine/pages/list_vessel.dart';
+import 'package:marine/utility/dragmarker.dart';
 import 'package:marine/utility/metric_choice.dart';
 import 'package:marine/widget/measure_result_widget.dart';
 import 'package:marine/widget/metric_radio.dart';
@@ -19,7 +21,6 @@ import 'package:marine/widget/vessel_widget.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-//TODO FOCUSSARE TUTTO SUL VESSEL SCELTO(RITORNA INDEX)
 // ignore: must_be_immutable
 class Home extends StatefulWidget {
   List<Vessel> vessels = [];
@@ -42,8 +43,13 @@ class _HomeState extends State<Home> {
   bool checkCrash = false;
   double currentZoom = 13.0;
   bool measure = false;
-  lat.LatLng startMeasure, stopMeasure;
   Polyline measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
+
+  ///Lista di waypoints
+  List<Waypoint> waypoints = [];
+  ///Lista dei marker utilizzati per il calcolo delle distanze
+  List<DragMarker> distanceMarkers = [];
+
 
   ///Indice del vessel che si sta seguendo
   int selectedVesselFocus = 0;
@@ -59,6 +65,114 @@ class _HomeState extends State<Home> {
     super.dispose();
   }
 
+  ///Utilizzato per calcolare la distanza tra i due marker,restituisce un Text con la distanza calcolata
+  ///in base al sistema metrico scelto
+  Text mesureDistance(){
+      ///calcolo la distanza per i diversi sistemi metrici
+      metricCalculator.calculate(SphericalUtil.computeDistanceBetween(
+          LatLng(distanceMarkers[0].point.latitude,distanceMarkers[0].point.longitude),
+          LatLng(distanceMarkers[1].point.latitude,distanceMarkers[1].point.longitude)));
+      switch(metricChoice.name){
+        case "meter":{
+          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.meter.toStringAsFixed(2)}","m"]);
+        }
+        case "ft":{
+          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.ft.toStringAsFixed(2)}","${metricChoice.name}"]);
+        }
+        case "yd":{
+          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.yd.toStringAsFixed(2)}","${metricChoice.name}"]);
+        }
+        case "mile":{
+          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.mile.toStringAsFixed(2)}","${metricChoice.name}"]);
+        }
+        default:{
+          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.meter}","mx"]);
+        }
+      }
+    }
+
+  void generateDistanceMarkers(){
+
+    ///Comincio a impostare la Polyline
+    measurePolyline = Polyline(
+        strokeWidth: 4.0,
+        color: Colors.red,
+        points: [mapController.center, mapController.center]);
+
+
+    distanceMarkers.add(DragMarker(
+      point: mapController.center,
+      width: 80.0,
+      height: 80.0,
+      offset: Offset(0.0, -8.0),
+      builder: (ctx) => Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Container(
+              color: Colors.white70,
+              child: mesureDistance(),
+            ),
+            Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.lightGreenAccent,),
+          ]
+      ),
+      onDragStart:  (details,point) => print("Start point $point"),
+      onDragEnd:    (details,point) => print("End point $point"),
+      onDragUpdate: (details,point) { setState(() {
+        ///ridisegno la polyline ad ogni update del marker
+        List<lat.LatLng> tmp = measurePolyline.points;
+        measurePolyline = Polyline(
+            strokeWidth: 4.0,
+            color: Colors.red,
+            points: [point, tmp[1]]);
+      });
+      },
+      onTap:        (point) { print("on tap"); },
+      onLongPress:  (point) { print("on long press"); },
+      feedbackBuilder: (ctx) =>  Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.red,),
+      feedbackOffset: Offset(0.0, -18.0),
+      updateMapNearEdge: true,	// Experimental, move the map when marker close to edge
+      nearEdgeRatio: 2.0,	// Experimental
+      nearEdgeSpeed: 1.0,	// Experimental
+    ));
+
+    distanceMarkers.add(DragMarker(
+      point: mapController.center,
+      width: 80.0,
+      height: 80.0,
+      offset: Offset(0.0, -8.0),
+      builder: (ctx) => Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Container(
+              color: Colors.white70,
+              child: mesureDistance(),
+            ),
+            Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.lightGreenAccent,),
+         ]
+      ),
+      onDragStart:  (details,point) => print("Start point $point"),
+      onDragEnd:    (details,point) => print("End point $point"),
+      onDragUpdate: (details,point) {
+        setState(() {
+          ///ridisegno la polyline ad ogni update del marker
+          List<lat.LatLng> tmp = measurePolyline.points;
+          measurePolyline = Polyline(
+              strokeWidth: 4.0,
+              color: Colors.red,
+              points: [tmp[0], point]);
+        });
+      },
+      onTap:        (point) { print("on tap"); },
+      onLongPress:  (point) { print("on long press"); },
+      feedbackBuilder: (ctx) =>  Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.red,),
+      feedbackOffset: Offset(0.0, -18.0),
+      updateMapNearEdge: true,	// Experimental, move the map when marker close to edge
+      nearEdgeRatio: 2.0,	// Experimental
+      nearEdgeSpeed: 1.0,	// Experimental
+    ));
+  }
   ///Definisce l'aspetto di ogni [Vessel]
   Marker generateMarker(int i){
     return Marker(
@@ -184,10 +298,6 @@ class _HomeState extends State<Home> {
     else
       mapController.rotate(0);
 
-    print("gradi in radianti : ${widget.vessels[selectedVesselFocus].courseOverGroundTrue}");
-    print("gradi in gradi : ${widget.vessels[selectedVesselFocus].directionToDegrees()}");
-    print("rotazione mappa: ${mapController.rotation}");
-
   }
 
   bool showNavigation=false;
@@ -226,36 +336,44 @@ class _HomeState extends State<Home> {
                         return FlutterMap(
                           mapController: mapController,
                           options: MapOptions(
+                            plugins: [
+                              DragMarkerPlugin(),
+                            ],
+                            onLongPress: (point){
+                              TextEditingController _controller = TextEditingController();
+                              ///TODO inserire nuovo marker con note e navigazione
+                              showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return
+                                      AlertDialog(
+                                          title: Text("Waypoint name"),
+                                          content: SingleChildScrollView(
+                                            child: TextField(
+                                              controller: _controller,
+                                              decoration: InputDecoration(
+                                                border: OutlineInputBorder(),
+                                                labelText: 'Note',
+                                              ),
+                                            )
+                                          ),
+                                          actions: <Widget>[
+                                            TextButton(
+                                              child: Text('close').tr(),
+                                              onPressed: () {
+                                                setState(() {
+                                                  waypoints.add(Waypoint(point: point,label:_controller.text));
+                                                  Navigator.of(context).pop();
+
+                                                });
+                                              },
+                                            ),
+                                          ]
+                                      );
+                                  });
+                            },
                             maxZoom: 16,
                             minZoom: 6,
-                            ///Se measure è true e startMeasure è null, si sta tappando il punto iniziale della misurazione
-                            ///Se measure è true e startMeasure!=null, si sta tappando il punto finale della misurazione
-                            onTap: (point) {
-                              print(point);
-                              if (measure) {
-                                if (startMeasure != null) {
-                                  stopMeasure = point;
-
-                                  setState(() {
-                                    measurePolyline = Polyline(
-                                        strokeWidth: 4.0,
-                                        color: Colors.red,
-                                        points: [startMeasure, stopMeasure]);
-
-                                    showDialog(context: context,
-                                      builder: (context) => MeasureResult(
-                                        start: startMeasure,
-                                        end: stopMeasure,
-                                        metricChoice: metricChoice,
-                                        calculatedResult: metricCalculator,
-                                      ),
-                                    );
-                                  });
-                                } else {
-                                  startMeasure = point;
-                                }
-                              }
-                            },
                             center: widget.vessels[selectedVesselFocus].latLng,
                             zoom: currentZoom,
                           ),
@@ -272,6 +390,8 @@ class _HomeState extends State<Home> {
                             MarkerLayerOptions(
                               markers: _markers,
                             ),
+
+
                             PolylineLayerOptions(
                                 polylines: [Polyline(
                                     strokeWidth: 2.0,
@@ -282,6 +402,9 @@ class _HomeState extends State<Home> {
                                     ]
                                 ), measurePolyline
                                 ]
+                            ),
+                            DragMarkerPluginOptions(
+                              markers: distanceMarkers,
                             ),
                           ],
                         );
@@ -401,16 +524,15 @@ class _HomeState extends State<Home> {
                           IconButton(
                               onPressed: () {
                                 setState(() {
-                                  ///La funzione per il calcolo delle posizioni,distanza e il disegno della retta
-                                  ///è implementato nell'onTap della mappa
-                                  if (measure) {
-                                    measure = false;
-                                    measurePolyline = Polyline(
-                                        points: [lat.LatLng(0, 0), lat.LatLng(0, 0)]);
-                                    startMeasure = null;
-                                    stopMeasure = null;
-                                  } else
-                                    measure = true;
+                                  if(measure){
+                                    distanceMarkers.clear();
+                                    measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
+                                    measure=false;
+                                  }
+                                  else {
+                                    measure=true;
+                                    generateDistanceMarkers();
+                                  }
                                 });
                               },
                               icon: Icon(
@@ -492,7 +614,10 @@ class _HomeState extends State<Home> {
                                     builder: (context) => MetricRadio(),
                                   ///viene triggerato non appena si sceglie un valore dal dialog
                                 ).then((value){
-                                  metricChoice = value;
+                                  setState(() {
+                                    metricChoice = value;
+
+                                  });
                                 });
                               },
                               icon: Icon(
