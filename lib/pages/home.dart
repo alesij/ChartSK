@@ -45,8 +45,15 @@ class _HomeState extends State<Home> {
   bool measure = false;
   Polyline measurePolyline = Polyline(points: [lat.LatLng(0,0),lat.LatLng(0,0)]);
 
+  ///Utile per passare il context ai widget
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   ///Lista di waypoints
   List<Waypoint> waypoints = [];
+  ///Lista di marker associati ai waypoints
+  List <DragMarker> waypointsMarker;
+
+
   ///Lista dei marker utilizzati per il calcolo delle distanze
   List<DragMarker> distanceMarkers = [];
 
@@ -325,6 +332,8 @@ class _HomeState extends State<Home> {
               createMarkers();
             }
             return Scaffold(
+              ///definisco la chiave dello scaffold
+              key: _scaffoldKey,
               body: Stack(
                 children: [
                   Positioned.fill(
@@ -362,7 +371,7 @@ class _HomeState extends State<Home> {
                                               child: Text('close').tr(),
                                               onPressed: () {
                                                 setState(() {
-                                                  waypoints.add(Waypoint(point: point,label:_controller.text));
+                                                  waypoints.add(Waypoint(point: point,label:_controller.text,context: _scaffoldKey.currentContext));
                                                   Navigator.of(context).pop();
 
                                                 });
@@ -406,6 +415,10 @@ class _HomeState extends State<Home> {
                             DragMarkerPluginOptions(
                               markers: distanceMarkers,
                             ),
+                            DragMarkerPluginOptions(
+                              markers: waypoints.map<DragMarker>((row) => row.marker).toList(growable: false)
+
+                        )
                           ],
                         );
                       },
