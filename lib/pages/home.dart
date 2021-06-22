@@ -15,7 +15,6 @@ import 'package:marine/model/waypoint.dart';
 import 'package:marine/pages/list_vessel.dart';
 import 'package:marine/utility/dragmarker.dart';
 import 'package:marine/utility/metric_choice.dart';
-import 'package:marine/widget/measure_result_widget.dart';
 import 'package:marine/widget/metric_radio.dart';
 import 'package:marine/widget/vessel_widget.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -93,7 +92,7 @@ class _HomeState extends State<Home> {
           return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.mile.toStringAsFixed(2)}","${metricChoice.name}"]);
         }
         default:{
-          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.meter}","mx"]);
+          return Text('measureDistanceBetweenPoints').tr(args: ["${metricCalculator.meter}","m"]);
         }
       }
     }
@@ -120,7 +119,7 @@ class _HomeState extends State<Home> {
               color: Colors.white70,
               child: mesureDistance(),
             ),
-            Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.lightGreenAccent,),
+            Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.black),
           ]
       ),
       onDragStart:  (details,point) => print("Start point $point"),
@@ -156,7 +155,7 @@ class _HomeState extends State<Home> {
               color: Colors.white70,
               child: mesureDistance(),
             ),
-            Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.lightGreenAccent,),
+            Icon(FontAwesomeIcons.mapMarkerAlt,size: 30,color: Colors.black,),
          ]
       ),
       onDragStart:  (details,point) => print("Start point $point"),
@@ -180,6 +179,7 @@ class _HomeState extends State<Home> {
       nearEdgeSpeed: 1.0,	// Experimental
     ));
   }
+
   ///Definisce l'aspetto di ogni [Vessel]
   Marker generateMarker(int i){
     return Marker(
@@ -268,29 +268,34 @@ class _HomeState extends State<Home> {
           if(vesselToUpdateIndex==0 && (followDirection || followPosition))
             followVessel();
 
-          if(checkCrash&&positionPrevisionMin>0){
-            int slot = positionPrevisionMin~/5;
-            Vessel vesselInCrash;
-            int i=1;
-            for(i=1;i<6 && vesselInCrash==null;i++) {
-              int slice = i*slot;
-              if(slice!=0) {
-                vesselInCrash = widget.vessels[selectedVesselFocus].checkCollision(
-                    widget.vessels, slice);
-              }
-            }
-            if(vesselInCrash!=null) {
-              WidgetsBinding.instance.addPostFrameCallback((_){
-
-
-                print('Crash in: ${i*slot} min with ${vesselInCrash.name}');
-                final snackBar = SnackBar(content: Text('crash').tr(args:['${i*slot}','${vesselInCrash.name}']));
-                ScaffoldMessenger.of(context).showSnackBar(snackBar);
-              });
-            }
+          if(checkCrash){
+            positionPrevisionMin>0?crashDetection(positionPrevisionMin):crashDetection(20);
           }
         }
       }
+    }
+  }
+
+  void crashDetection(int min){
+    int slot = min~/5;
+    Vessel vesselInCrash;
+    int i=1;
+    for(i=1;i<6 && vesselInCrash==null;i++) {
+      int slice = i * slot;
+      print(slice);
+      if (slice != 0) {
+        vesselInCrash =
+            widget.vessels[selectedVesselFocus].checkCollision(
+                widget.vessels, slice);
+      }
+    }
+    if (vesselInCrash != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print('Crash in: ${i * slot} min with ${vesselInCrash.name}');
+        final snackBar = SnackBar(content: Text('crash').tr(
+            args: ['${i * slot}', '${vesselInCrash.name}']));
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      });
     }
   }
 
@@ -319,18 +324,21 @@ class _HomeState extends State<Home> {
             final snackBar = SnackBar(content: Text(state.message));
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
+          if(state is GetVesselsSucceed){
+            widget.vessels = state.vessels;
+            if(_markers==null || _markers.length==0){
+              createMarkers();
+            }
+          }
         },
+
         builder: (context, state) {
           if(state is GetVesselsLoading) {
             return Center(
               child: CircularProgressIndicator(),
             );
           }
-          else if(state is GetVesselsSucceed) {
-            widget.vessels = state.vessels;
-            if(_markers==null || _markers.length==0){
-              createMarkers();
-            }
+          if(state is GetVesselsSucceed) {
             return Scaffold(
               ///definisco la chiave dello scaffold
               key: _scaffoldKey,

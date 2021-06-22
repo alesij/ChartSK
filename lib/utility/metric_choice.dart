@@ -18,8 +18,4 @@ extension MetricExtension on Metric {
         return null;
     }
   }
-
-  void talk() {
-    print('meow');
-  }
 }

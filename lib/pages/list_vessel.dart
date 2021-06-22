@@ -40,10 +40,6 @@ class _ListVesselState extends State<ListVessel> {
                     onTap: (){
                       ///ritorna l'indice del vessel scelto
                       Navigator.of(context).pop(index);
-                      /*
-                      ///Ritorna il vessel scelto
-                      Navigator.of(context).pop(state.vessels[index]);
-                      */
                     },
                   )
               )
