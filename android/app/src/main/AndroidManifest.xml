@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.alessiodimatteo.marine.marine">
    <application
-        android:label="marine"
+        android:label="ChartSK"
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity
